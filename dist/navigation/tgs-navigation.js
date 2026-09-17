@@ -4,7 +4,8 @@
 function create(config){
   const N=root.TGSNavigation,$=id=>document.getElementById(id),data=config.data;
   const maps=new Map(data.maps.map(m=>[m.id,m])),campus=maps.get('campus');
-  const booths=new Map(data.booths.map(b=>[b.id,campus?.placements[b.id]?{...b,...campus.placements[b.id],map:'campus'}:b]));
+  const booths=new Map(data.booths.map(b=>[b.id,campus?.placements[b.id]?{...b,...campus.placements[b.id],map:'campus',kind:'booth'}:{...b,kind:'booth'}]));
+  const facilities=new Map(data.facilities.map(f=>{const p=campus?.facilityPlacements?.[f.id],x=p?.x??f.x,y=p?.y??f.y,map=p?'campus':f.map;return [f.id,{...f,...(p||{}),x,y,map,kind:'facility',bounds:[x-1.4,y-1.4,x+1.4,y+1.4]}];}));
   const grids=new Map(),sentMaps=new Set(),pending=new Map();
   const STORAGE='tgs2026-navigation-calibration-v1';
   let calibrationByMap={},firstAnchor=null,origin=null,target=null,route=null,choosing=false,routeToken=0,worker=null,reading={},lastOriginKey='',fitNext=false,frame=0;
@@ -76,17 +77,24 @@ function create(config){
     $('nav-sources').replaceChildren();for(const item of config.boothSources(b)){if(!/^https:\/\//.test(item.url))continue;const a=document.createElement('a');a.href=item.url;a.target='_blank';a.rel='noopener';a.textContent=item.label+' ↗';$('nav-sources').append(a);}
     $('nav-more').open=false;
   }
-  function toggleBooth(id){
-    const b=booths.get(id);if(!b)return;
-    if(target?.id===id){stop();return;}
-    // Both permission requests originate in this double tap / button event.
-    sensors.start();cancel();route=null;lastOriginKey='';target=b;choosing=false;fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
-    config.enter(b.map);following=true;describeBooth(b);$('nav-card').hidden=false;config.targetChanged(id);
-    if(origin?.mapId!==b.map)origin=null;
-    const c=calibrationFor(b.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(b.map),i=N.cellAt(g,p);if(i>=0)origin={mapId:b.map,...p,manual:false};}
+  function describeFacility(f){
+    const labels={entrance:'입구',locker:'보관함',food:'식사',charge:'배터리',info:'안내소',restroom:'화장실'};
+    $('nav-code').textContent=(f.floor||'')+' · '+(labels[f.category]||f.category);$('nav-name').textContent=f.name;
+    $('nav-exhibits').textContent=f.note||'편의시설 위치';$('nav-sources').replaceChildren();
+    if(/^https:\/\//.test(data.source||'')){const a=document.createElement('a');a.href=data.source;a.target='_blank';a.rel='noopener';a.textContent='TGS 공식 배치도 ↗';$('nav-sources').append(a);}
+    $('nav-more').open=false;
+  }
+  function startTarget(next,describe){
+    if(target?.id===next.id&&target?.kind===next.kind){stop();return;}
+    sensors.start();cancel();route=null;lastOriginKey='';target=next;choosing=false;fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
+    config.enter(next.map);following=true;describe(next);$('nav-card').hidden=false;config.targetChanged(next.kind==='booth'?next.id:null);
+    if(origin?.mapId!==next.map)origin=null;
+    const c=calibrationFor(next.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(next.map),i=N.cellAt(g,p);if(i>=0)origin={mapId:next.map,...p,manual:false};}
     status(origin?'통로를 따라 경로를 찾고 있어요.':'이 도면에서 내 위치를 먼저 맞춰 주세요.');
     controls();if(origin){center(true);zoomNext=false;}recalculate();buttons();renderSoon();$('nav-stop').focus?.({preventScroll:true});
   }
+  function toggleBooth(id){const b=booths.get(id);if(b)startTarget(b,describeBooth);}
+  function toggleFacility(id){const f=facilities.get(id);if(f)startTarget(f,describeFacility);}
   function stop(){
     cancel();target=null;route=null;choosing=false;firstAnchor=null;lastOriginKey='';following=false;zoomNext=false;lastCenter='';collapsed=false;
     $('nav-card').hidden=true;edgeVisible(false);$('nav-pick-hint').hidden=true;
@@ -124,7 +132,7 @@ function create(config){
       try{result=await requestRoute(p,b);}catch(e){if(e.message!=='worker')throw e;result=await requestRoute(p,b);}
       if(token!==routeToken||!target||!result)return;route=result;
       route.usesBridge=target.map==='campus'&&route.line.some(p=>p.y>campus.bridgeBounds[1]&&p.y<campus.bridgeBounds[3]);
-      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 통로 안내':'부스까지 통로를 따라 이동하세요.');
+      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 통로 안내':target.kind==='facility'?'시설까지 통로를 따라 이동하세요.':'부스까지 통로를 따라 이동하세요.');
       if(fitNext){fitNext=false;fit();}renderSoon();
     }catch(e){if(token!==routeToken)return;route=null;status(e.message==='off-path'?'통로에서 내 위치를 다시 맞춰 주세요.':'연결된 통로를 찾지 못했어요. 내 위치를 다시 맞춰 주세요.');renderSoon();}
   }
@@ -172,7 +180,7 @@ function create(config){
   $('nav-recenter').addEventListener('click',()=>{sensors.start();follow(true);});
   $('nav-overview').addEventListener('click',()=>{following=false;buttons();fit();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&target){e.preventDefault();stop();}});
-  return {toggleBooth,stop,choose,isChoosing:()=>choosing,isActive:()=>!!target,targetId:()=>target?.id||null,update:renderSoon,
+  return {toggleBooth,toggleFacility,stop,choose,isChoosing:()=>choosing,isActive:()=>!!target,targetId:()=>target?.kind==='booth'?target.id:null,targetFacilityId:()=>target?.kind==='facility'?target.id:null,update:renderSoon,
     interact:()=>{following=false;fitNext=false;buttons();},
     toggleControls:()=>{collapsed=!collapsed;controls();lastCenter='';if(following)center();renderSoon();},
     resize:()=>{lastCenter='';if(following)center(zoomNext);renderSoon();},
