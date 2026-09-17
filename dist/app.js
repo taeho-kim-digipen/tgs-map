@@ -13,6 +13,8 @@
   let scene, favoritePage=0;
   const vectorMaps=new Map();
   let modePreference='auto';
+  const PLAN_MIGRATION_KEY='tgs2026-planned-booths-v2';
+  let campusViewBounds=new Map();
   let visitFilter='all';
   try{modePreference=localStorage.getItem('tgs2026-screen-mode')||'auto';}catch{}
   if(!['auto','portrait','landscape','pc'].includes(modePreference))modePreference='auto';
@@ -315,8 +317,14 @@
     const view=data.views.find(v=>v.id===id);if(!view)return;
     closeResults(false);
     cancelHold();closeDetail();activeView=id;
-    if(!activeMap||activeMap.id!==view.map)setMap(view.map);
-    fitBounds(view.bounds);
+    const campusBounds=campusViewBounds.get(id);
+    if(campusBounds){
+      if(!activeMap||activeMap.id!=='campus')setMap('campus');
+      fitBounds(campusBounds,id==='campus'?18:34);
+    }else{
+      if(!activeMap||activeMap.id!==view.map)setMap(view.map);
+      fitBounds(view.bounds);
+    }
     for(const el of $('hall-nav').children)el.setAttribute('aria-pressed',String(el.dataset.view===id));
     if($('app').dataset.mode!=='pc')Array.from($('hall-nav').children).find(el=>el.dataset.view===id)?.scrollIntoView?.({block:'nearest',inline:'nearest',behavior:'smooth'});
   }
@@ -483,14 +491,32 @@
       const campusResponse=await fetch('./navigation/campus.json');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
       data.maps.push(campus);data.views.unshift({id:'campus',label:'멧세 전체',map:'campus',bounds:[45,25,620,600]});
       for(const b of data.booths)b.campus=campus.placements[b.id];for(const f of data.facilities)f.campus=campus.facilityPlacements[f.id];
+      const unionBounds=(rects,pad=8)=>{if(!rects.length)return null;return [Math.min(...rects.map(r=>r[0]))-pad,Math.min(...rects.map(r=>r[1]))-pad,Math.max(...rects.map(r=>r[2]))+pad,Math.max(...rects.map(r=>r[3]))+pad];};
+      const boothCampusBounds=(predicate,pad=8)=>unionBounds(data.booths.filter(b=>b.campus?.bounds&&predicate(b)).map(b=>b.campus.bounds),pad);
+      campusViewBounds=new Map([
+        ['campus',[20,15,660,620]],
+        ['all',boothCampusBounds(b=>b.hall>=1&&b.hall<=8,10)],
+        ['h78',boothCampusBounds(b=>b.hall>=7&&b.hall<=8,9)],
+        ['h46',boothCampusBounds(b=>b.hall>=4&&b.hall<=6,9)],
+        ['h13',boothCampusBounds(b=>b.hall>=1&&b.hall<=3,9)],
+        ['school',boothCampusBounds(b=>b.map==='school',7)],
+        ['halls911',boothCampusBounds(b=>b.hall>=9,10)],
+        ['indie9',boothCampusBounds(b=>b.map==='indie9',7)],
+        ['selected80',boothCampusBounds(b=>b.map==='selected80',7)],
+        ['business9',boothCampusBounds(b=>b.map==='business9',7)]
+      ]);
+      const concourseRects=data.facilities.filter(f=>f.map==='concourse'&&f.campus).map(f=>[f.campus.x-10,f.campus.y-10,f.campus.x+10,f.campus.y+10]);
+      const concourseBounds=unionBounds(concourseRects,10);if(concourseBounds)campusViewBounds.set('concourse',concourseBounds);
+      for(const [key,value] of [...campusViewBounds])if(!value)campusViewBounds.delete(key);
       byId=new Map(data.booths.map(b=>[b.id,b]));
       for(const b of data.booths)b.searchText=normal(`${b.name} ${b.shortName||''} ${b.officialName} ${b.code} ${boothAliases[b.id]||''} ${(b.exhibitors||[]).join(' ')} ${(visitOf(b).activities||[]).join(' ')} ${visitOf(b).goods||''} ${b.locationLabel||''}`);
       try{const raw=localStorage.getItem(STORAGE_KEY);if(raw!==null){const list=JSON.parse(raw);if(!Array.isArray(list))throw new Error('storage');favorites=new Set(list.filter(id=>byId.has(id)));}else{favorites=new Set(data.defaults.filter(id=>byId.has(id)));save();}}
       catch{favorites=new Set(data.defaults.filter(id=>byId.has(id)));storageOkay=false;$('storage-status').textContent='현재 창에서만 유지';}
+      try{if(localStorage.getItem(PLAN_MIGRATION_KEY)!=='1'){for(const id of data.defaults)if(byId.has(id))favorites.add(id);save();localStorage.setItem(PLAN_MIGRATION_KEY,'1');}}catch{}
       for(const v of data.views){const b=document.createElement('button');b.textContent=v.label;b.dataset.view=v.id;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectView(v.id));$('hall-nav').append(b);}
       for(const [id,category] of Object.entries(categories)){const button=document.createElement('button');button.style.setProperty('--facility-color',category.color);button.append(facilityIcon(id));const label=document.createElement('span');label.textContent=category.label;button.append(label);button.setAttribute('aria-label',`${category.label} 위치 찾기`);button.addEventListener('click',()=>{const items=data.facilities.filter(f=>f.category===id);$('booth-search').blur();if(items.length===1)focusFacility(items[0].id);else openResults(items,category.label);});$('facility-nav').append(button);}
       const source=$('source-info'),p=document.createElement('p');p.textContent=`공식 영문 배치도 · 2026년 9월 공개본 · ${data.booths.length}개 부스 구역`;
-      const p2=document.createElement('p');p2.textContent='반다이남코·넥슨·아스트라에 오라티오는 이전 방문 계획에 따라 처음부터 표시됩니다. 1홀 학교 구역은 원본의 별도 확대도로 볼 수 있습니다.';
+      const p2=document.createElement('p');p2.textContent='방문 계획에서 정한 부스들은 처음 한 번 관심 부스로 자동 추가됩니다. 홀 버튼은 별도 지도로 바꾸지 않고 멧세 전체 지도에서 해당 위치로 이동합니다.';
       const a=document.createElement('a');a.href=data.source;a.target='_blank';a.rel='noopener';a.textContent='TGS 공식 지도 원본 보기 ↗';source.append(p,p2,a);
       await Promise.all(data.maps.map(async m=>{
         const response=await fetch(m.image);if(!response.ok)throw new Error('vector map');
