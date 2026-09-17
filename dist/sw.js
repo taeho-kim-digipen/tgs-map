@@ -1,5 +1,5 @@
 'use strict';
-const VERSION = '2026.09.17.3';
+const VERSION = '2026.09.17.4';
 const BASE = self.registration.scope;
 const PREFIX = 'tgs2026-travel:' + new URL(BASE).pathname + ':';
 const CACHE = PREFIX + VERSION;
@@ -26,8 +26,6 @@ async function verifiedResponse(url) {
   } else if (target.pathname.endsWith('.js') && !/javascript|ecmascript/.test(type)) throw new Error('Not a map script');
   else if (target.pathname.endsWith('.css') && !type.includes('text/css')) throw new Error('Not a stylesheet');
   else if (target.pathname.endsWith('.png') && !type.includes('image/png')) throw new Error('Not an icon');
-  // Drain each download before waiting for the entire bundle. Holding unread
-  // response streams can exhaust a browser's HTTP connection pool.
   return new Response(await response.arrayBuffer(), {status:response.status, statusText:response.statusText, headers:response.headers});
 }
 
@@ -60,28 +58,40 @@ self.addEventListener('fetch', event => {
   const cacheKey = isEntry ? URLS[0] : URLS.find(asset => asset === canonical);
   if (!cacheKey) return;
   event.respondWith((async () => {
-    const cached = await (await caches.open(CACHE)).match(cacheKey);
-    return cached || fetch(request);
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+    try {
+      const response = await verifiedResponse(cacheKey);
+      await cache.put(cacheKey, response.clone());
+      return response;
+    } catch (error) {
+      if (isEntry) return new Response('TGS map is not available offline yet.', {status:503, headers:{'Content-Type':'text/plain; charset=utf-8'}});
+      throw error;
+    }
   })());
 });
 
-async function cacheStatus() {
-  const cache = await caches.open(CACHE);
-  const found = await Promise.all(URLS.map(url => cache.match(url)));
-  return {ready:found.every(Boolean), version:VERSION, saved:found.filter(Boolean).length, total:URLS.length};
-}
-
 self.addEventListener('message', event => {
-  if (!['TGS_TRAVEL_STATUS','TGS_TRAVEL_PREPARE'].includes(event.data?.type) || !event.ports[0]) return;
-  event.waitUntil((async () => {
-    try {
-      if (event.data.type === 'TGS_TRAVEL_PREPARE') {
+  const reply = payload => event.source?.postMessage(payload);
+  if (event.data?.type === 'TGS_TRAVEL_STATUS') {
+    event.waitUntil((async () => {
+      const cache = await caches.open(CACHE);
+      const keys = new Set((await cache.keys()).map(request => request.url));
+      const missing = URLS.filter(url => !keys.has(url));
+      reply({type:'TGS_TRAVEL_STATUS', version:VERSION, ready:missing.length === 0, saved:URLS.length - missing.length, total:URLS.length, missing});
+    })());
+  }
+  if (event.data?.type === 'TGS_TRAVEL_PREPARE') {
+    event.waitUntil((async () => {
+      try {
+        const responses = await Promise.all(URLS.map(verifiedResponse));
         const cache = await caches.open(CACHE);
-        for (const url of URLS) if (!(await cache.match(url))) await cache.put(url, await verifiedResponse(url));
+        await Promise.all(responses.map((response, index) => cache.put(URLS[index], response)));
+        reply({type:'TGS_TRAVEL_STATUS', version:VERSION, ready:true, saved:URLS.length, total:URLS.length, missing:[]});
+      } catch (error) {
+        reply({type:'TGS_TRAVEL_STATUS', version:VERSION, ready:false, error:error.message || String(error)});
       }
-      event.ports[0].postMessage(await cacheStatus());
-    } catch {
-      event.ports[0].postMessage({ready:false,error:'전체 지도를 저장하지 못했습니다. 인터넷 연결과 저장 공간을 확인해 주세요.'});
-    }
-  })());
+    })());
+  }
 });
