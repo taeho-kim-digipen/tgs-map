@@ -23,3 +23,6 @@
 /* inset-facility-nav-v1 */
 .map-label.interactive{pointer-events:auto;cursor:pointer}.map-label.inset{max-width:72px;padding:2px 4px;font-size:10px;line-height:1.1;border-width:1px}.map-label.inset:after{bottom:-4px;border-left-width:3px;border-right-width:3px;border-top-width:4px}.booth-peek-route{flex:0 0 auto;min-width:52px;min-height:38px;border:1px solid #263d40;border-radius:7px;background:#fff;color:#263d40;font-weight:750}.facility-marker.nav-destination{outline:4px solid #823dde;outline-offset:3px;box-shadow:0 0 0 3px #fff,0 4px 18px #44216b4a}
 @media(max-height:520px) and (orientation:landscape){.booth-peek-route{min-height:34px}}
+
+/* mobile-runtime-opt-v1 */
+#world,#facility-markers,#labels,#visit-markers{contain:layout paint style}.facility-markers,.labels,.visit-markers{transform:translateZ(0)}#map{will-change:contents}

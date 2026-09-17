@@ -5,6 +5,7 @@
   const NS = 'http://www.w3.org/2000/svg';
   const STORAGE_KEY = 'tgs2026-interest-booths-v1';
   let contentItems=[], data, activeMap, activeView, byId, favorites = new Set(), storageOkay = true;
+  let visitBooths=[], lastSvgViewport='';
   let tx = 0, ty = 0, scale = 1, minScale = .1, maxScale = 20;
   let focused = null, toastTimer, frame = 0, holdTimer, gesture, lastTap, singleTapTimer;
   let navigation=null, beforeNavigation=null, controlsHidden=false;
@@ -69,7 +70,7 @@
   };
   const nameOf = b => b.shortName || b.name;
   const locationOf = b => b.locationLabel||`${b.hall}홀`;
-  const geometryOf=(b,mapId=activeMap?.id)=>!b?null:mapId==='campus'&&b.campus?{...b,...b.campus,map:'campus'}:b.map===mapId?b:null;
+  const geometryOf=(b,mapId=activeMap?.id)=>!b?null:mapId==='campus'&&b.campus?(b.campusGeometry||(b.campusGeometry={...b,...b.campus,map:'campus',sourceMap:b.campus.sourceMap||b.map})):b.map===mapId?b:null;
   const campusFloorOf=item=>String(item?.floor||'').toUpperCase().startsWith('2')?'2f':'1f';
   function detailTier(){
     if(!activeMap||activeMap.id!=='campus')return 'full';
@@ -168,7 +169,7 @@
   }
   function renderFacilities(){
     if(!activeMap||!data)return;
-    const layer=$('facility-markers');layer.replaceChildren();const clusters=[];const tier=detailTier();
+    const layer=$('facility-markers');layer.replaceChildren();const fragment=document.createDocumentFragment(),clusters=[];const tier=detailTier();
     const radius=activeMap.id==='campus'?(tier==='overview'?52:tier==='medium'?38:27):27;
     for(const original of data.facilities){
       const facility=geometryOf(original);if(!facility)continue;
@@ -197,8 +198,9 @@
         closeResults(false);
         if(c.items.length===1)focusFacility(c.items[0].id);
         else{closeDetail();activeView=null;const xs=c.items.map(f=>f.x),ys=c.items.map(f=>f.y);fitBounds([Math.min(...xs)-12,Math.min(...ys)-12,Math.max(...xs)+12,Math.max(...ys)+12],55);}
-      });layer.append(button);
+      });fragment.append(button);
     }
+    layer.append(fragment);
   }
   function focusFacility(id){
     const original=data.facilities.find(f=>f.id===id);const f=geometryOf(original)||original;if(!f)return;
@@ -274,7 +276,7 @@
   }
   function renderLabels() {
     if(!activeMap)return;
-    const layer=$('labels');layer.replaceChildren();
+    const layer=$('labels');layer.replaceChildren();const fragment=document.createDocumentFragment();
     if(activeMap.id==='campus'&&floorMode==='2f')return;
     const tier=detailTier();if(activeMap.id==='campus'&&tier==='overview')return;
     const labels=[];
@@ -291,14 +293,15 @@
       let labelY=y-4;
       for(let tries=0;tries<5&&labels.some(p=>Math.abs(p.x-x)<130&&Math.abs(p.y-labelY)<26);tries++)labelY-=27;
       labelY=Math.max(27,labelY);labels.push({x,y:labelY});
-      label.style.left=`${clamp(x,22,viewport.clientWidth-22)}px`;label.style.top=`${labelY}px`;layer.append(label);
+      label.style.left=`${clamp(x,22,viewport.clientWidth-22)}px`;label.style.top=`${labelY}px`;fragment.append(label);
     }
+    layer.append(fragment);
   }
   function renderVisitMarkers(){
-    const layer=$('visit-markers');layer.replaceChildren();if(!activeMap||visitFilter==='off')return;
+    const layer=$('visit-markers');layer.replaceChildren();const fragment=document.createDocumentFragment();if(!activeMap||visitFilter==='off')return;
     if(activeMap.id==='campus'&&(floorMode==='2f'||detailTier()!=='full'))return;
     const occupied=[];
-    for(const b of data.booths.map(b=>geometryOf(b)).filter(b=>b&&matchesVisit(b))){
+    for(const source of visitBooths){const b=geometryOf(source);if(!b||!matchesVisit(b))continue;
       const info=visitOf(b),marks=[];
       if(info.demo==='yes')marks.push('demo');
       if(needsTicket(info))marks.push('ticket');
@@ -311,8 +314,9 @@
       marker.dataset.booth=b.id;
       marker.style.left=`${x}px`;marker.style.top=`${y}px`;
       for(const kind of marks){const badge=document.createElement('span');badge.className=`visit-badge visit-${kind}`;badge.append(visitIcon(kind));marker.append(badge);}
-      layer.append(marker);
+      fragment.append(marker);
     }
+    layer.append(fragment);
   }
   function constrain() {
     const w=viewport.clientWidth,h=viewport.clientHeight,mw=activeMap.width*scale,mh=activeMap.height*scale;
@@ -323,10 +327,10 @@
     if(frame)return;
     frame=requestAnimationFrame(()=>{
       frame=0;
-      const w=viewport.clientWidth,h=viewport.clientHeight;
-      svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+      const w=viewport.clientWidth,h=viewport.clientHeight,viewBox=`0 0 ${w} ${h}`;
+      if(viewBox!==lastSvgViewport){svg.setAttribute('viewBox',viewBox);lastSvgViewport=viewBox;}
       scene?.setAttribute('transform',`translate(${tx} ${ty}) scale(${scale})`);
-      syncOfficialFloorLayers();renderLabels();renderFacilities();renderVisitMarkers();navigation?.update();
+      renderLabels();renderFacilities();renderVisitMarkers();navigation?.update();
     });
   }
   function fitBounds(bounds,padding=24) {
@@ -572,10 +576,12 @@
         const {booth,game,image,condition,goods:ignored,...extra}=item;
         data.details.booths[b.id]={...old,...extra,activities:[...new Set([...(old.activities||[]),...games])],goods:[old.goods,goods].filter(Boolean).join('\n')};
       }
+      visitBooths=data.booths.filter(b=>data.details.booths[b.id]);
 
       const campusResponse=await fetch('./navigation/campus.json');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
       data.maps.push(campus);data.views.unshift({id:'campus',label:'멧세 전체',map:'campus',bounds:[45,25,620,600]});
-      for(const b of data.booths)b.campus=campus.placements[b.id];for(const f of data.facilities)f.campus=campus.facilityPlacements[f.id];
+      for(const b of data.booths){b.campus=campus.placements[b.id];if(b.campus)b.campusGeometry={...b,...b.campus,map:'campus',sourceMap:b.campus.sourceMap||b.map};}
+      for(const f of data.facilities){f.campus=campus.facilityPlacements[f.id];if(f.campus)f.campusGeometry={...f,...f.campus,map:'campus',sourceMap:f.map};}
       const unionBounds=(rects,pad=8)=>{if(!rects.length)return null;return [Math.min(...rects.map(r=>r[0]))-pad,Math.min(...rects.map(r=>r[1]))-pad,Math.max(...rects.map(r=>r[2]))+pad,Math.max(...rects.map(r=>r[3]))+pad];};
       const boothCampusBounds=(predicate,pad=8)=>unionBounds(data.booths.filter(b=>b.campus?.bounds&&predicate(b)).map(b=>b.campus.bounds),pad);
       campusViewBounds=new Map([
@@ -603,13 +609,17 @@
       const source=$('source-info'),p=document.createElement('p');p.textContent=`공식 영문 배치도 · 2026년 9월 공개본 · ${data.booths.length}개 부스 구역`;
       const p2=document.createElement('p');p2.textContent='홀 버튼은 멧세 전체 지도 안에서 해당 위치로 이동합니다. 우측의 1층·2층 버튼으로 층별 지도와 시설만 골라 볼 수 있으며, 축소 상태에서는 아이콘을 자동으로 줄여 표시합니다.';
       const a=document.createElement('a');a.href=data.source;a.target='_blank';a.rel='noopener';a.textContent='TGS 공식 지도 원본 보기 ↗';source.append(p,p2,a);
-      await Promise.all(data.maps.map(async m=>{
+      const loadVectorMap=async m=>{
+        if(vectorMaps.has(m.id))return;
         const response=await fetch(m.image);if(!response.ok)throw new Error('vector map');
         const parsed=new DOMParser().parseFromString(await response.text(),'image/svg+xml');
         if(parsed.querySelector('parsererror')||parsed.documentElement.localName!=='svg')throw new Error('invalid vector map');
         vectorMaps.set(m.id,parsed.documentElement);
-      }));
+      };
+      await loadVectorMap(campus);
       renderFavorites();selectView('campus');$('load-status').hidden=true;registerTools();
+      const defer=window.requestIdleCallback?cb=>window.requestIdleCallback(cb,{timeout:2200}):cb=>setTimeout(cb,450);
+      defer(()=>{Promise.all(data.maps.filter(m=>m.id!=='campus').map(loadVectorMap)).catch(()=>{});});
       try{
       if(window.TGSMapNavigation&&window.TGSNavigation&&window.TGSNavigationSensors){
         const response=await fetch('./navigation/walkable.json');if(!response.ok)throw Error('navigation map');

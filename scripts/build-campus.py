@@ -90,7 +90,7 @@ for w0 in ways.values():
  elif t.get('highway')in['primary','secondary','tertiary','residential','unclassified','service']:svg.append(f'<path d="{path(pts)}" fill="none" stroke="#fafbf7" stroke-width="{8 if t["highway"] in ["primary","secondary"] else 5}" stroke-linecap="round"/>')
  elif t.get('highway')in['footway','pedestrian','steps']:svg.append(f'<path d="{path(pts,t.get("area")=="yes")}" fill="{"#f4f4ec"if t.get("area")=="yes"else "none"}" stroke="#c4cfbd" stroke-width="2"/>')
 for geom in walk:svg.append(f'<path d="{path(list(geom.exterior.coords),True)}" fill="#fffefa" stroke="#a1b3a4" stroke-width=".3"/>')
-svg.extend(booth_shapes);svg.append('<g fill="#193638" font-family="Arial,sans-serif" pointer-events="none">');svg.extend(booth_text);svg.append('</g>')
+# Booth hitboxes/placements are emitted to campus.json and app.js. The visible booth artwork comes from the official PDF overlay, so do not duplicate hundreds of synthetic SVG booth nodes here.
 labels=[(OX-290,OY-216,'HALL 7–8'),(OX-126,OY-216,'HALL 4–6'),(OX+75,OY-216,'HALL 1–3'),(OX+48,OY+180,'HALL 9'),(OX+48,OY+258,'HALL 10'),(OX+48,OY+300,'HALL 11'),(OX-86,OY+55,'2F 연결교'),(OX-260,OY+1,'국제회의장'),(OX-52,OY-6,'이벤트홀')]
 for x,y,label in labels:svg.append(f'<text x="{x}" y="{y}" font-family="Arial,sans-serif" font-size="7" font-weight="700" text-anchor="middle" fill="#3d5e52">{label}</text>')
 for p in stairs:svg.append(f'<g transform="translate({p["x"]} {p["y"]})"><rect x="-3" y="-3" width="6" height="6" rx="1" fill="#34675d"/><path d="M-2 2H-.6V.6H.7V-.7H2V-2" fill="none" stroke="white" stroke-width=".8"/></g>')
