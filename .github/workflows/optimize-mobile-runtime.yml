@@ -1,0 +1,36 @@
+name: Optimize mobile runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/optimize-mobile-runtime.cjs'
+      - '.github/workflows/optimize-mobile-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply runtime optimizations
+        run: node scripts/optimize-mobile-runtime.cjs
+      - name: Validate JavaScript
+        run: node --check dist/app.js
+      - name: Report optimized sizes
+        run: |
+          wc -c dist/campus.svg dist/app.js dist/style.css
+      - name: Commit optimized site
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/app.js dist/campus.svg dist/style.css dist/index.html dist/sw.js scripts/build-campus.py
+          git diff --cached --quiet && exit 0
+          git commit -m 'Optimize iPhone map rendering and startup'
+          git push
