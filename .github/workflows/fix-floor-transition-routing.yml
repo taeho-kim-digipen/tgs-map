@@ -1,0 +1,64 @@
+name: Fix floor-transition routing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/fix-floor-transition-routing.cjs'
+      - '.github/workflows/fix-floor-transition-routing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply routing patch
+        run: node scripts/fix-floor-transition-routing.cjs
+      - name: Install campus build dependencies
+        run: python -m pip install --disable-pip-version-check numpy shapely
+      - name: Rebuild campus routing mask
+        run: python scripts/build-campus.py
+      - name: Re-compose official map artwork
+        run: node scripts/compose-campus-official.cjs
+      - name: Validate floor boundary
+        run: |
+          node --check dist/navigation/tgs-navigation.js
+          python -m py_compile scripts/build-campus.py
+          python - <<'PY'
+          import json,base64,math
+          c=json.load(open('dist/navigation/campus.json'))
+          g=json.load(open('dist/navigation/campus-grid.json'))
+          raw=base64.b64decode(g['bits'])
+          def allowed(x,y):
+              ix=int(x/g['cell']);iy=int(y/g['cell']);i=iy*g['w']+ix
+              return bool((raw[i>>3]>>(i&7))&1)
+          stairs=[s for s in c['stairs'] if s['x']<600]
+          if len(stairs)<6: raise SystemExit('missing main floor stair connectors')
+          # The main 1F/2F boundary should only be crossable close to registered stairs.
+          test_y=170.0
+          crossings=[]
+          for i in range(g['w']):
+              x=(i+.5)*g['cell']
+              if allowed(x,test_y): crossings.append(x)
+          bad=[x for x in crossings if min(abs(x-s['x']) for s in stairs)>4.0]
+          if bad: raise SystemExit('floor boundary leaks outside stairs: '+str(bad[:12]))
+          print('validated floor boundary; allowed stair crossings:',len(crossings))
+          PY
+      - name: Commit corrected routing
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/build-campus.py dist/navigation/tgs-navigation.js dist/index.html dist/sw.js dist/campus.svg dist/navigation/campus.json dist/navigation/campus-grid.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Route between floors only through stairs'
+          git push
