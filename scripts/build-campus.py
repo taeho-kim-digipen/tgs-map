@@ -21,26 +21,36 @@ def xy(t,p):return [p[0]*t[0]+t[2],p[1]*t[1]+t[3]]
 def rect(t,r):return xy(t,r[:2])+xy(t,r[2:])
 panels={p['id']:{**p,'transform':transform(p['from'],[p['to'][0]+OX,p['to'][1]+OY,p['to'][2]+OX,p['to'][3]+OY])}for p in REG['panels']}
 transforms={id:p['transform']for id,p in panels.items()}
+def envelope(rects):return [min(r[0] for r in rects),min(r[1] for r in rects),max(r[2] for r in rects),max(r[3] for r in rects)]
+main_panels=[p for p in REG['panels'] if p['map']=='main']
+main_source=envelope([p['from'] for p in main_panels])
+main_target=envelope([rect(transforms[p['id']],p['from']) for p in main_panels])
+main_transform=transform(main_source,main_target)
+concourse_map=next(m for m in D['maps'] if m['id']=='concourse')
+concourse_source=[main_source[0],0,main_source[2],concourse_map['height']]
+concourse_target=[main_target[0],OY-87,main_target[2],OY-87+concourse_map['height']*.72]
+concourse_transform=transform(concourse_source,concourse_target)
 for p in REG['insets']:transforms[p['map']]=transform(p['from'],rect(transforms[p['parent']],p['to']))
 def for_booth(b):
- if b['map']=='main':return transforms['main78' if b['hall']>=7 else 'main46' if b['hall']>=4 else 'main13']
+ if b['map']=='main':return main_transform
  return transforms[b['map']]
 walk=[];blocked=[]
 for id,p in panels.items():
- t=p['transform'];src=p['from']
+ t=main_transform if p['map']=='main' else p['transform'];src=p['from']
  # The 9–11 ground lobby lies west of the exhibition floor, separately from 2F esplanade.
  if id=='halls911':src=[42,14,205,683]
  walk.append(box(*rect(t,src)))
 # Three drawn cross passages in each mall, never a free region outside the building.
 for left,right in [('main78','main46'),('main46','main13')]:
+ lrect=rect(main_transform,panels[left]['from']);rrect=rect(main_transform,panels[right]['from'])
  for a,b in [(47,55),(97,105),(145,153)]:
-  y0=xy(transforms[left],[0,a])[1];y1=xy(transforms[left],[0,b])[1]
-  walk.append(box(panels[left]['to'][2]+OX-.5,y0,panels[right]['to'][0]+OX+.5,y1))
+  y0=xy(main_transform,[0,a])[1];y1=xy(main_transform,[0,b])[1]
+  walk.append(box(lrect[2]-.5,y0,rrect[0]+.5,y1))
 # Fixed stage footprint from the original TGS drawing; no route through the stage.
-blocked.append(box(*rect(transforms['main13'],[803,32,906,73])))
+blocked.append(box(*rect(main_transform,[803,32,906,73])))
 stairs=[]
 for p in REG['mainStairs']:
- id='main78' if p[0]<240 else 'main46' if p[0]<580 else 'main13';q=xy(transforms[id],p)
+ q=xy(main_transform,p)
  end=[q[0],OY-77.8];walk.append(LineString([q,end]).buffer(2.3));stairs.append({'x':q[0],'y':(q[1]+end[1])/2,'label':'1F ↔ 2F'})
 for id in REG['walkingWayIds']:walk.append(LineString(ways[id]['points']).buffer(2.5))
 # 2F esplanade; deliberately separated from the 1F lobby except at the stair link.
@@ -89,9 +99,8 @@ geo={'origin':{'latitude':G['latitude'],'longitude':G['longitude']},'x':OX,'y':O
 campus={'id':'campus','width':W,'height':H,'image':'./campus.svg','maxScale':42,'floor':'마쿠하리 멧세 · 1–11홀 연결 지도','geo':geo,'registration':'approximate','sources':REG['sources'],'placements':placements,'stairs':stairs,'bridgeBounds':[OX-115,OY+24,OX-100,OY+114]}
 facility_placements={}
 for f in D['facilities']:
- if f['map'] in ['main','concourse']:
-  t=transforms['main78' if f['x']<245 else 'main46' if f['x']<580 else 'main13'];p=xy(t,[f['x'],f['y']])
-  if f['map']=='concourse':p[1]=OY-87+f['y']*.72
+ if f['map']=='main':p=xy(main_transform,[f['x'],f['y']])
+ elif f['map']=='concourse':p=xy(concourse_transform,[f['x'],f['y']])
  elif f['map'] in transforms:p=xy(transforms[f['map']],[f['x'],f['y']])
  else:continue
  facility_placements[f['id']]={'x':round(p[0],3),'y':round(p[1],3)}

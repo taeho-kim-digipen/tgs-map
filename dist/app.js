@@ -80,7 +80,7 @@
   function syncFloorSwitchUI(){
     const wrap=$('floor-switch');if(!wrap)return;
     const active=activeMap?.id==='campus';wrap.hidden=!active;
-    for(const button of wrap.querySelectorAll('button'))button.setAttribute('aria-pressed',String(active&&button.dataset.floor===floorMode));
+    for(const button of wrap.querySelectorAll?.('button')||[])button.setAttribute('aria-pressed',String(active&&button.dataset.floor===floorMode));
   }
   function syncOfficialFloorLayers(){
     if(activeMap?.id!=='campus'||!scene)return;
@@ -225,7 +225,7 @@
     const b=byId.get(id), add=typeof selected==='boolean'?selected:!favorites.has(id);
     if (add) favorites.add(id); else favorites.delete(id);
     save(); renderFavorites(); updateSelection();
-    if (focused===id) showDetail(id);
+    if(focused===id){if($('detail').hidden)renderBoothPeek(id);else showDetail(id);}
     announce(`${nameOf(b)} · ${add?'관심 등록':'관심 해제'}${storageOkay?'':' (저장 실패)'}`);
     return {id,selected:add};
   }
@@ -394,14 +394,30 @@
     activeView=null;for(const el of $('hall-nav').children)el.setAttribute('aria-pressed','false');
     const r=b.bounds,cx=(r[0]+r[2])/2,cy=(r[1]+r[3])/2;
     const bw=Math.max(70,r[2]-r[0]+34),bh=Math.max(60,r[3]-r[1]+40);
-    fitBounds([cx-bw/2,cy-bh/2,cx+bw/2,cy+bh/2],55);showDetail(id);
+    fitBounds([cx-bw/2,cy-bh/2,cx+bw/2,cy+bh/2],55);selectBooth(id);
+  }
+  function ensureBoothPeek(){
+    let card=$('booth-peek');if(card)return card;
+    card=document.createElement('section');card.id='booth-peek';card.className='booth-peek';card.hidden=true;card.setAttribute('aria-live','polite');viewport.append(card);return card;
+  }
+  function hideBoothPeek(){const card=$('booth-peek');if(card)card.hidden=true;}
+  function renderBoothPeek(id){
+    const b=byId.get(id);if(!b)return;const card=ensureBoothPeek();card.replaceChildren();
+    const info=document.createElement('div');info.className='booth-peek-info';
+    const title=document.createElement('strong');title.textContent=nameOf(b);
+    const meta=document.createElement('small');meta.textContent=`${locationOf(b)} · ${b.code}`;info.append(title,meta);
+    const open=document.createElement('button');open.type='button';open.className='booth-peek-open';open.textContent='보기';open.setAttribute('aria-label',`${nameOf(b)} 상세정보 보기`);open.addEventListener('click',()=>showDetail(id));
+    card.append(info,open);card.hidden=false;
+  }
+  function selectBooth(id){
+    const b=byId.get(id);if(!b)return;focused=id;$('detail').hidden=true;renderBoothPeek(id);updateSelection();
   }
   function showDetail(id) {
-    const b=byId.get(id);if(!b)return;focused=id;const panel=$('detail');panel.replaceChildren();
+    const b=byId.get(id);if(!b)return;focused=id;hideBoothPeek();const panel=$('detail');panel.replaceChildren();
     const head=document.createElement('div');head.className='detail-head';
     const info=document.createElement('div'),code=document.createElement('div'),title=document.createElement('h2');
     code.className='booth-code';code.textContent=`${locationOf(b)} / ${b.code}`;title.textContent=b.name;info.append(code,title);
-    const close=document.createElement('button');close.className='icon-button detail-close';close.textContent='✕';close.setAttribute('aria-label','부스 정보 닫기');close.addEventListener('click',closeDetail);head.append(info,close);panel.append(head);
+    const close=document.createElement('button');close.className='icon-button detail-close';close.textContent='✕';close.setAttribute('aria-label','부스 정보 닫기');close.addEventListener('click',()=>selectBooth(id));head.append(info,close);panel.append(head);
     if(b.note){const p=document.createElement('p');p.textContent=b.note;panel.append(p);}
     const visit=visitOf(b),status=document.createElement('div');status.className='visit-status';
     const states=[['demo',visit.demo==='yes'?'시연 있음':visit.demo==='no'?'시연 없음':'시연 미확인'],['ticket',needsTicket(visit)?(visit.ticket==='partial'?'일부 정리권':visit.ticket==='reservation'?'예약·정리권':'정리권 필요'):visit.ticket==='none'?'정리권 불필요':'정리권 미확인'],['sale',visit.sales==='yes'?'판매 있음':visit.sales==='no'?'판매 없음':'판매 미확인']];
@@ -425,7 +441,7 @@
     const routeAction=document.createElement('button');routeAction.className='route-button';routeAction.textContent=navigation?'이 부스까지 경로 안내':'위치 안내 준비 중';routeAction.disabled=!navigation;routeAction.addEventListener('click',()=>navigation?.toggleBooth(id));panel.append(routeAction);
     const action=document.createElement('button');action.className=`interest-button ${favorites.has(id)?'is-selected':''}`;action.textContent=favorites.has(id)?'★ 관심 부스 해제':'☆ 관심 부스로 등록';action.setAttribute('aria-pressed',String(favorites.has(id)));action.addEventListener('click',()=>toggle(id));panel.append(action);panel.hidden=false;updateSelection();
   }
-  function closeDetail(){focused=null;$('detail').hidden=true;updateSelection();}
+  function closeDetail(){focused=null;$('detail').hidden=true;hideBoothPeek();updateSelection();}
   function cancelHold(){clearTimeout(holdTimer);holdTimer=null;$('press-indicator').classList.remove('active');}
   function beginHold(id,p){
     if(!id||navigation?.isChoosing())return;
@@ -434,7 +450,7 @@
   }
   viewport.addEventListener('contextmenu',e=>e.preventDefault());
   viewport.addEventListener('pointerdown',e=>{
-    if(e.target.closest('button,a,input,select,summary,.detail,.zoom-controls,.search-results,.nav-card'))return;
+    if(e.target.closest('button,a,input,select,summary,.detail,.booth-peek,.zoom-controls,.search-results,.nav-card'))return;
     if(e.pointerType==='mouse'&&e.button!==0)return;
     e.preventDefault();clearTimeout(singleTapTimer);const p=coords(e);pointers.set(e.pointerId,p);
     try{viewport.setPointerCapture(e.pointerId);}catch{} // Window listeners retain the drag if WebKit declines capture.
@@ -480,7 +496,7 @@
     clearTimeout(singleTapTimer);lastTap={time:now,p,id:g.id,map:activeMap.id};
     if(navigation?.isActive())return;
     if(g.view){selectView(g.view);return;}
-    if(g.id)singleTapTimer=setTimeout(()=>{if(!navigation?.isActive())showDetail(g.id);},330);else closeDetail();
+    if(g.id)singleTapTimer=setTimeout(()=>{if(!navigation?.isActive())selectBooth(g.id);},330);else closeDetail();
   }
   viewport.addEventListener('pointerup',e=>finishPointer(e));
   viewport.addEventListener('pointercancel',e=>finishPointer(e,true));
