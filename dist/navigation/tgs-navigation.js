@@ -143,6 +143,21 @@ function create(config){
     const points=route&&target?.map===config.mapId()?route.line.map(config.toScreen):[];
     const d=points.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
     $('nav-route-halo').setAttribute('d',d);$('nav-route-line').setAttribute('d',d);
+    let transitions=$('nav-transitions');
+    if(!transitions){transitions=document.createElementNS('http://www.w3.org/2000/svg','g');transitions.id='nav-transitions';overlay.append(transitions);}
+    transitions.replaceChildren();
+    if(route&&target?.map==='campus'&&config.mapId()==='campus'&&Array.isArray(campus?.stairs)){
+      const segmentDistance=(p,a,b)=>{const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy;if(!l)return Math.hypot(p.x-a.x,p.y-a.y);const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l)),x=a.x+t*dx,y=a.y+t*dy;return Math.hypot(p.x-x,p.y-y);};
+      for(const stair of campus.stairs){
+        let used=false;for(let i=1;i<route.line.length;i++)if(segmentDistance(stair,route.line[i-1],route.line[i])<4.2){used=true;break;}
+        if(!used)continue;
+        const q=config.toScreen(stair),g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('transform',`translate(${q.x} ${q.y})`);g.setAttribute('pointer-events','none');
+        const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r','17');c.setAttribute('fill','#fff');c.setAttribute('stroke','#7c3aed');c.setAttribute('stroke-width','4');
+        const icon=document.createElementNS('http://www.w3.org/2000/svg','text');icon.setAttribute('text-anchor','middle');icon.setAttribute('y','6');icon.setAttribute('font-size','19');icon.setAttribute('font-weight','900');icon.setAttribute('fill','#5b21b6');icon.textContent='↕';
+        const label=document.createElementNS('http://www.w3.org/2000/svg','text');label.setAttribute('text-anchor','middle');label.setAttribute('y','35');label.setAttribute('font-size','12');label.setAttribute('font-weight','800');label.setAttribute('paint-order','stroke');label.setAttribute('stroke','#fff');label.setAttribute('stroke-width','4');label.setAttribute('fill','#4c1d95');label.textContent='계단 · 층 이동';
+        g.append(c,icon,label);transitions.append(g);
+      }
+    }
     const p=origin?.mapId===config.mapId()?config.toScreen(origin):null,marker=$('nav-position');
     marker.style.display=p?'':'none';if(p)marker.setAttribute('transform',`translate(${p.x} ${p.y})`);
     const c=calibrationFor(config.mapId()),known=p&&c&&reading.heading!==null&&reading.heading!==undefined;

@@ -48,10 +48,17 @@ for left,right in [('main78','main46'),('main46','main13')]:
   walk.append(box(lrect[2]-.5,y0,rrect[0]+.5,y1))
 # Fixed stage footprint from the original TGS drawing; no route through the stage.
 blocked.append(box(*rect(main_transform,[803,32,906,73])))
-stairs=[]
+stairs=[];main_stair_xs=[]
 for p in REG['mainStairs']:
  q=xy(main_transform,p)
- end=[q[0],OY-77.8];walk.append(LineString([q,end]).buffer(2.3));stairs.append({'x':q[0],'y':(q[1]+end[1])/2,'label':'1F ↔ 2F'})
+ end=[q[0],OY-77.8];walk.append(LineString([q,end]).buffer(2.3));stairs.append({'x':q[0],'y':(q[1]+end[1])/2,'label':'1F ↔ 2F'});main_stair_xs.append(q[0])
+# The south edge of Halls 1-8 is 1F. The Central Mall immediately outside is 2F.
+# Keep a solid floor boundary between them and punch holes ONLY at the official TO-2F stairs.
+# This prevents A* from stepping straight from a 1F aisle onto the 2F bridge.
+main_edge_y=main_target[3]
+transition_barrier=box(main_target[0]-2,main_edge_y-1.5,main_target[2]+2,OY-80.0)
+stair_openings=unary_union([box(x-2.8,main_edge_y-3,x+2.8,OY-76.5) for x in main_stair_xs])
+blocked.append(transition_barrier.difference(stair_openings))
 for id in REG['walkingWayIds']:walk.append(LineString(ways[id]['points']).buffer(2.5))
 # 2F esplanade; deliberately separated from the 1F lobby except at the stair link.
 walk.append(box(OX-105,OY+116,OX-86.2,OY+318))
