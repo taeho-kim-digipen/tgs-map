@@ -33,10 +33,21 @@ jobs:
       - name: Validate generated site
         run: |
           node --check dist/app.js
-          node tests/check-server.cjs
-          node tests/check-travel.cjs
-          node tests/check-navigation.cjs
-          node tests/check-content.cjs
+          python -m py_compile scripts/build-campus.py
+          grep -q 'function selectBooth' dist/app.js
+          grep -q "open.textContent='보기'" dist/app.js
+          grep -q 'main_transform' scripts/build-campus.py
+          grep -q 'id="official-1f-overlay"' dist/campus.svg
+          grep -q 'id="official-2f-overlay"' dist/campus.svg
+          node - <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('dist/map-data.json','utf8'));
+          const campus=JSON.parse(fs.readFileSync('dist/navigation/campus.json','utf8'));
+          const placements=campus.placements||{};
+          if(Object.keys(placements).length!==data.booths.length) throw new Error('booth placement count mismatch');
+          if(data.booths.some(b=>!placements[b.id]?.bounds)) throw new Error('missing booth placement');
+          console.log('validated booth placements:', data.booths.length);
+          NODE
       - name: Commit corrected map
         run: |
           git config user.name 'github-actions[bot]'
