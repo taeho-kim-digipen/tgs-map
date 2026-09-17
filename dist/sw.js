@@ -1,5 +1,5 @@
 'use strict';
-// deploy-floor-density-v3-2026-09-18
+// real-floor-switch-2026-09-18
 const VERSION = '2026.09.18.3';
 const BASE = self.registration.scope;
 const PREFIX = 'tgs2026-travel:' + new URL(BASE).pathname + ':';
