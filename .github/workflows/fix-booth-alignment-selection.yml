@@ -1,0 +1,44 @@
+name: Fix booth alignment and tap selection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/fix-booth-alignment-selection.cjs'
+      - '.github/workflows/fix-booth-alignment-selection.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply coordinate and selection patch
+        run: node scripts/fix-booth-alignment-selection.cjs
+      - name: Install campus build dependencies
+        run: python -m pip install --disable-pip-version-check numpy shapely
+      - name: Rebuild registered campus geometry
+        run: python scripts/build-campus.py
+      - name: Re-compose official floor artwork
+        run: node scripts/compose-campus-official.cjs
+      - name: Validate JavaScript and tests
+        run: |
+          node --check dist/app.js
+          npm test
+      - name: Commit corrected map
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/build-campus.py dist/app.js dist/style.css dist/index.html dist/sw.js dist/campus.svg dist/navigation/campus.json dist/navigation/campus-grid.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Align all booth overlays and require View for details'
+          git push
