@@ -1,0 +1,38 @@
+name: Apply campus map UI v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply-campus-ui-v2.cjs'
+      - 'scripts/compose-campus-official.cjs'
+      - '.github/workflows/apply-campus-ui-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: campus-map-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compose full official maps on campus
+        run: node scripts/compose-campus-official.cjs
+      - name: Apply single-campus navigation and planned favorites
+        run: node scripts/apply-campus-ui-v2.cjs
+      - name: Commit generated site files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/campus.svg dist/app.js dist/map-data.json dist/sw.js dist/index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Apply campus map UI v2'
+          git push
