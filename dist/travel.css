@@ -1,0 +1,15 @@
+#info-dialog{max-height:calc(100dvh - 28px);overflow:auto;overscroll-behavior:contain}
+.travel-panel{margin:16px 0;padding:15px;border:1px solid #cbd6cc;border-radius:10px;background:#fff}
+.travel-panel h3{font-size:16px;margin:0 0 10px;color:#173a32}
+.travel-panel p{font-size:14px;line-height:1.55;margin:9px 0}
+.travel-panel button{min-height:44px;border:1px solid #c4d1c7;border-radius:6px;background:#f7faf5;color:#234438;padding:9px 10px;font:inherit;font-size:14px}
+.travel-panel .travel-primary{width:100%;background:#243e37;color:white;border-color:#243e37;font-weight:650}
+.travel-panel details{margin-top:14px;font-size:14px;line-height:1.6}
+.travel-panel summary{min-height:32px;cursor:pointer;color:#245a44;font-weight:650}
+.travel-panel ol{padding-left:23px;margin:8px 0}
+.travel-panel li+li{margin-top:7px}
+.travel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#offline-status{font-weight:650;color:#526b5b}
+#offline-status[data-state=ready]{color:#146443}
+#offline-status[data-state=error]{color:#a13535}
+#interest-transfer-status{padding-top:7px;color:#315c49;overflow-wrap:anywhere}

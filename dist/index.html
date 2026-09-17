@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#122124">
+  <meta name="tgs-travel-version" content="2026.09.17.3">
+  <meta name="apple-mobile-web-app-title" content="TGS 지도">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="TGS 2026 1–11홀 공식 지도. 부스를 길게 눌러 나만의 관심 부스를 표시하세요.">
+  <title>TGS 2026 · 관심 부스 지도</title>
+  <link rel="stylesheet" href="./style.css?v=7">
+  <link rel="stylesheet" href="./travel.css">
+  <link rel="stylesheet" href="./visit.css">
+  <link rel="stylesheet" href="./navigation/navigation.css?v=7">
+  <script src="./navigation/core.js" defer></script>
+  <script src="./navigation/sensors.js?v=7" defer></script>
+  <script src="./navigation/tgs-navigation.js?v=7" defer></script>
+  <script src="./app.js?v=7" defer></script>
+  <script src="./travel.js" defer></script>
+</head>
+<body>
+  <main id="app" data-mode="portrait">
+    <header class="header">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">TGS</span><div><h1>2026 <span>부스 지도</span></h1><p>HALL 1–11 · 인디·전시·판매</p></div></div>
+      <div class="search-box"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg><input id="booth-search" type="search" placeholder="부스 이름 / 번호 검색" aria-label="부스 이름, 번호 또는 편의시설 검색" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="search"></div>
+      <select id="display-mode" aria-label="화면 모드"><option value="auto">화면 자동</option><option value="landscape">아이폰 가로</option><option value="portrait">아이폰 세로</option><option value="pc">PC 모드</option></select>
+      <button id="info-button" class="icon-button" aria-label="지도 출처 및 사용 방법">ⓘ</button>
+    </header>
+    <section id="viewport" class="viewport" aria-label="TGS 1–11홀과 인디 전시관 지도. 두 손가락으로 확대하고, 부스를 길게 눌러 관심 표시를 켜고 끄세요.">
+      <div id="world"><svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="공식 부스 배치도"></svg></div>
+      <svg id="nav-overlay" xmlns="http://www.w3.org/2000/svg" aria-label="부스까지 갈 경로와 내 위치">
+        <path id="nav-route-halo"/><path id="nav-route-line"/>
+        <circle id="nav-end" r="6" fill="#823dde" stroke="white" stroke-width="3" style="display:none"/>
+        <g id="nav-position" style="display:none"><g id="nav-arrow"><path d="M0 -29 L21 23 Q23 27 19 25 L0 15 L-19 25 Q-23 27 -21 23 Z" fill="#087cff" stroke="white" stroke-width="4" stroke-linejoin="round"/></g><circle id="nav-dot" r="9" fill="#087cff" stroke="white" stroke-width="4"/><text id="nav-position-label" y="44">내 위치</text></g>
+      </svg>
+      <button id="location-button">내 위치 맞추기</button>
+      <button id="map-controls-toggle" aria-expanded="true" aria-controls="map-favorites map-controls nav-actions" aria-label="하단 메뉴 숨기기"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 9 7 7 7-7"/></svg></button>
+      <p id="nav-pick-hint" hidden role="status"></p>
+      <section id="nav-card" class="nav-card" hidden aria-label="목적지 부스">
+        <button id="nav-stop" class="nav-stop" aria-label="경로 안내 종료">×</button>
+        <details id="nav-more"><summary aria-label="목적지 부스 정보 펼치기"><span id="nav-code" class="nav-code"></span><strong id="nav-name" class="nav-name"></strong></summary><p id="nav-exhibits"></p><div id="nav-sources" class="visit-links"></div></details>
+        <p id="nav-status" role="status" aria-live="polite"></p>
+        <div id="nav-actions" class="nav-actions"><button id="nav-recenter" aria-pressed="true">◎ 내 위치 따라가기</button><button id="nav-overview">전체 경로</button><button id="nav-locate">내 위치 맞추기</button><button id="nav-compass">방향 켜기</button></div>
+      </section>
+      <div id="facility-markers" class="facility-markers"></div>
+      <div id="campus-credit" hidden>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap 기여자</a> · TGS 공식 도면</div>
+      <div id="labels" class="labels"></div>
+      <div id="visit-markers" class="visit-markers" aria-hidden="true"></div>
+      <div id="load-status" class="load-status" role="status">공식 지도를 불러오는 중…</div>
+      <div class="map-caption"><span class="caption-line"></span><span id="map-floor">1F · 메인 전시관</span></div>
+      <div class="zoom-controls"><button id="zoom-in" aria-label="지도 확대">＋</button><button id="zoom-out" aria-label="지도 축소">−</button><button id="fit" aria-label="전체 지도 보기"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m6 0h5v-5"/></svg></button></div>
+      <div id="press-indicator" class="press-indicator" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19"/></svg><span>★</span></div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <div id="detail" class="detail" hidden></div>
+      <section id="search-results" class="search-results" aria-label="검색 결과" hidden><div class="results-heading"><strong id="results-title"></strong><button id="close-results" aria-label="검색 결과 닫기">✕</button></div><div id="results-list"></div><div class="results-pages"><button id="results-prev" aria-label="이전 검색 결과">‹ 이전</button><span id="results-page" aria-live="polite"></span><button id="results-next" aria-label="다음 검색 결과">다음 ›</button></div></section>
+    </section>
+    <section id="map-favorites" class="favorites" aria-label="관심 부스">
+      <div class="favorites-heading"><h2><span class="star">★</span> 관심 부스 <span id="favorite-count">0</span></h2><span id="storage-status">이 기기에 자동 저장</span><div id="favorite-pages" class="favorite-pages" hidden><button id="favorites-prev" aria-label="이전 관심 부스">‹</button><span id="favorite-page" aria-live="polite"></span><button id="favorites-next" aria-label="다음 관심 부스">›</button></div></div>
+      <div id="favorite-list" class="favorite-list"></div>
+      <p class="hint"><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M5 9V3a1.5 1.5 0 0 1 3 0v5l2-1 4 2v5l-2 3H6l-5-6q0-2 2-1l2 2"/></svg><span>부스를 <b>꾹 누르면</b> 관심 등록 · 다시 꾹 누르면 해제</span></p>
+    </section>
+    <aside id="map-controls" class="control-panel">
+      <div class="visit-legend" aria-label="부스 정보 범례">
+        <span class="visit-key"><b id="legend-demo" class="visit-demo"></b>시연</span><span class="visit-key"><b id="legend-ticket" class="visit-ticket"></b>정리권</span><span class="visit-key"><b id="legend-sale" class="visit-sale"></b>판매</span><span class="visit-key"><b id="legend-unknown" class="visit-unknown"></b>미확인</span>
+        <label><span>표시</span><select id="visit-filter" aria-label="부스 정보 표시"><option value="all">모두</option><option value="demo">시연 있음</option><option value="ticket">정리권 필요</option><option value="sales">판매 있음</option><option value="off">표시 끄기</option></select></label>
+      </div>
+      <nav id="hall-nav" class="hall-nav" aria-label="전시관 이동"></nav><div class="facility-heading">입구 · 편의시설</div><nav id="facility-nav" class="facility-nav" aria-label="입구와 편의시설 찾기"></nav><p class="floor-help">보관함·배터리·안내소는 <b>2F 센트럴몰</b>에 있습니다.</p>
+    </aside>
+    <svg id="nav-edge" xmlns="http://www.w3.org/2000/svg" hidden aria-hidden="true"><path id="nav-edge-bloom"/><path id="nav-edge-soft"/><path id="nav-edge-line"/></svg>
+  </main>
+  <dialog id="info-dialog"><div class="dialog-heading"><h2>지도 안내</h2><button id="close-info" class="icon-button" aria-label="닫기">✕</button></div>
+    <section class="travel-panel" aria-label="여행용 지도 저장">
+      <h3>여행용 지도 · 위치 안내</h3>
+      <p id="offline-status" role="status">오프라인 저장 상태 확인 중…</p>
+      <button id="offline-save" class="travel-primary">전체 지도 저장 확인</button>
+      <details><summary>iPhone에 설치하기</summary><ol><li>Safari의 공유 메뉴에서 <b>홈 화면에 추가</b>를 선택하세요. “웹 앱으로 열기”가 보이면 켜 두세요.</li><li>인터넷에 연결한 상태에서 추가한 아이콘으로 다시 열고 <b>오프라인 준비 완료</b>를 확인하세요.</li><li>출국 전 비행기 모드와 Wi-Fi 끄기 상태에서 앱을 완전히 닫았다 다시 열어 1–11홀과 인디 지도를 확인하세요.</li></ol><p>1–11홀·인디 확대도 등 원본 도면 7개·멧세 전체 지도와 부스 정보를 저장합니다. 저장 공간 정리로 지워질 수 있으니 출국 전에 확인하세요.</p></details>
+    </section>
+    <section class="travel-panel" aria-label="관심 목록 백업과 복원">
+      <button id="nav-reset" class="travel-primary">위치 추적·보정 초기화</button>
+      <h3>관심 목록 옮기기</h3><p>개발 주소·Safari·홈 화면 앱의 관심 목록은 서로 다를 수 있습니다. 기존 목록을 백업한 뒤 새 앱에서 불러오세요.</p>
+      <div class="travel-actions"><button id="interest-export">목록 백업</button><button id="interest-import">백업 불러오기</button></div>
+      <input id="interest-file" type="file" accept="application/json,.json" hidden>
+      <p id="interest-transfer-status" role="status" hidden></p>
+    </section>
+    <p>부스를 길게 누르면 관심 표시를 켜고 끌 수 있습니다. 짧게 누르면 부스 정보가 나옵니다. 부스를 두 번 누르면 경로 안내, 같은 부스를 다시 두 번 누르면 안내가 해제됩니다.</p><p>부스 이름·번호, 보관함·배터리 같은 시설명으로 검색할 수 있습니다. 두 손가락으로 지도를 확대하세요.</p><p>위에서 아이폰 가로·세로·PC 모드를 선택할 수 있습니다. 자동 모드는 화면 방향에 맞춰집니다.</p><p>입구마다 이용일과 시간이 다릅니다. 입구 아이콘을 눌러 원본 지도에 적힌 조건을 확인하세요. 숫자가 붙은 시설 아이콘은 여러 위치를 묶은 표시입니다.</p><p>관심 목록은 현재 브라우저에 저장됩니다.</p><p>멧세 전체 지도는 실제 건물·보행로에 공식 부스 도면을 근사 정합했습니다. GPS는 이 좌표에 표시하며, 실내에서 어긋나면 지금 서 있는 통로를 한 번 눌러 맞출 수 있습니다. 홀 사이 이동은 2F 중앙몰·연결교와 표시된 계단을 이용합니다. 일반공개일 10시 전에는 1–8홀과 9–11홀 사이 이동이 제한됩니다. 현장 통제는 실시간으로 반영하지 않습니다.</p><div id="source-info"></div></dialog>
+  <noscript>이 지도는 JavaScript가 켜진 Safari에서 사용할 수 있습니다.</noscript>
+</body>
+</html>

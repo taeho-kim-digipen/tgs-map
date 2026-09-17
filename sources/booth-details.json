@@ -1,0 +1,88 @@
+{
+  "checkedAt": "2026-09-11",
+  "booths": {
+    "05-N01": {
+      "demo": "yes", "ticket": "partial", "sales": "unknown",
+      "activities": ["ACE COMBAT 8: WINGS OF THEVE — Mission 4·11 시연", "GUNDAM ROGUE ORBIT — 3종 기체 프리셋으로 시연", "드래곤볼 제노버스 3 — 아바타 선택·미션 시연"],
+      "ticketNote": "에이스 컴뱃 8은 일반공개일(9/19–21) 당일 부스에서 배부하는 정리권이 필요합니다. 다른 작품의 정리권 조건은 별도로 확인하세요.",
+      "goods": "에이스 컴뱃 시연 스티커·부스 주변 쇼퍼, 건담 시연 프로모션 카드, 제노버스 시연 참 세트. 수량 한정입니다. 예약 구매 특전은 일본 거주자 대상 조건이 있어 구분해야 합니다.",
+      "salesNote": "게임 IP 공식 굿즈 판매는 11홀 별도 부스(11-W17)로 안내됩니다. 이 시연 부스에서의 판매는 미확인입니다.",
+      "relatedBooths": ["11-W17"],
+      "sources": [{"label":"반다이남코 TGS 공식","url":"https://tgs2026.bn-ent.net/jp/"},{"label":"에이스 컴뱃 정리권 규정","url":"https://tgs2026.bn-ent.net/ace_combat_8/"}]
+    },
+    "11-W17": {
+      "sales":"yes","demo":"unknown","ticket":"unknown",
+      "activities":["반다이남코 게임 IP 공식 굿즈 선행 판매"],
+      "salesNote":"11홀 판매 부스. 에이스 컴뱃 텀블러·데스크 매트·30주년 티셔츠, 테일즈 오브 이터니아 티셔츠·토트백, 괴혼 후디·스티커 등을 안내하고 있습니다. 품목별 가격·재고는 공식 판매 목록에서 확인하세요.",
+      "goods":"유료 판매 상품입니다. 5홀 시연 특전과 수령 조건이 다릅니다.",
+      "relatedBooths":["05-N01"],"sources":[{"label":"반다이남코 공식 판매 안내","url":"https://tgs2026.bn-ent.net/jp/#shop"}]
+    },
+    "07-C04": {
+      "demo":"yes","ticket":"unknown","sales":"unknown",
+      "activities":["마비노기 모바일 — 캠프파이어 앞 태블릿 시연·티르코네일 공간·포토존", "FAREIDOLIA(파레이돌리아) — 개발 중 게임 시연·캐릭터 가위바위보·스탬프 행사"],
+      "goods":"마비노기 모바일은 사전등록+시연 시 냉감 타월. FAREIDOLIA는 시연·부스 사진 SNS 게시·가위바위보로 스탬프를 모아 2개면 큰 배지, 3개면 배지+냉감 타월을 안내합니다. 현장 배포 조건을 확인하세요.",
+      "sources":[{"label":"마비노기 모바일 공식","url":"https://cmn-jp.nexon.com/event/tgs2026/mabinogimobile"},{"label":"FAREIDOLIA 공식","url":"https://cmn-jp.nexon.com/event/tgs2026/fareidolia"}]
+    },
+    "07-C03": {
+      "demo":"yes","ticket":"unknown","sales":"unknown",
+      "activities":["Astrae Oratio — 시나리오·전투 중 한 가지를 선택하는 세계 최초 시연", "시나리오 상영회: 프롤로그 등 부스 무대 프로그램"],
+      "goods":"공식 발표에 회장 한정 특전 안내가 있으나, 확인한 본문에서 품목·수령 조건을 확인하지 못했습니다. 별도 공지 확인이 필요합니다.",
+      "sources":[{"label":"NC 공식 TGS 발표 (9/8)","url":"https://about.ncsoft.com/jp/news/article/AO_update_260821-copy"}]
+    },
+    "07-S01": {
+      "demo":"yes","ticket":"partial","sales":"unknown",
+      "activities":["몬스터 헌터 와일즈: 어센던스 — 싱글·멀티 퀘스트 시연", "Nintendo Switch 2판 몬스터 헌터 와일즈 — 멀티플레이 시연"],
+      "ticketNote":"해당 몬스터 헌터 코너 부근에서 시연 정리권을 선착순 배부할 예정이며 수량이 한정됩니다. 타이틀·퀘스트별 정리권을 구분하세요.",
+      "goods":"몬스터 헌터 시연 특전으로 마이크로파이버 손수건을 안내합니다. 타이틀·코너별 수령 조건 및 소진 여부를 현장에서 확인하세요.",
+      "salesNote":"공식 지도에 별도 캡콤 상품판매 부스(09-W112)가 있습니다. 상품별 가격·재고는 미확인입니다.",
+      "relatedBooths":["09-W112"],
+      "sources":[{"label":"캡콤 공식 발표 9/1","url":"https://prtimes.jp/main/html/rd/p/000005996.000013450.html"},{"label":"캡콤 추가 시연 발표 9/10","url":"https://prtimes.jp/main/html/rd/p/000006038.000013450.html"}]
+    },
+    "06-S01": {
+      "demo":"yes","ticket":"reservation","sales":"unknown",
+      "activities":["PlayStation 시연: 몬스터 헌터 와일즈: 어센던스 / FINAL FANTASY VII REVELATION / Marvel’s Wolverine / ACE COMBAT 8"],
+      "ticketNote":"일본 지역 계정의 PS Plus 가입자는 9/16 23:59까지 일반공개일 시연을 선착순 사전예약할 수 있다고 발표했습니다. 당일 시연 정리권도 현장 선착순 배부 예정입니다. 예약 마감·대상 계정 조건을 확인하세요.",
+      "sources":[{"label":"PlayStation 공식 예약 안내 9/10","url":"https://blog.ja.playstation.com/2026/09/10/20260910-tgs-playstation-booth-announcement-s/"}]
+    },
+    "04-N01": {
+      "demo":"yes","ticket":"unknown","sales":"unknown",
+      "activities":["공식 시연 목록: STRANGER THAN HEAVEN / 페르소나 4 리바이벌 / 크레이지 택시: 월드 투어 / SONIC PICO PARK 외", "무대·활동·특전은 작품마다 다릅니다. 메타포: 리판타지오는 확인한 목록에서 활동·특전·무대로 분류됩니다."],
+      "goods":"공식 페이지에서 작품별 노벨티와 SEGA Account 등록자 대상 한정 키홀더를 안내합니다. 배포 장소·참가 조건은 해당 공식 공지에서 확인하세요.",
+      "salesNote":"공식 지도에서 세가/아틀라스 판매 부스는 11-W03으로 구분됩니다. 판매 상품의 가격·재고는 미확인입니다.",
+      "relatedBooths":["11-W03"],"sources":[{"label":"세가/아틀라스 TGS 공식","url":"https://tgs.sega.jp/2026/ja/"}]
+    },
+    "03-S01": {
+      "demo":"yes","ticket":"unknown","sales":"unknown",
+      "activities":["FINAL FANTASY VII REVELATION 시연", "FFVII 리메이크·리버스·리벨레이션 포토존, FFXIV 캐릭터 그리팅"],
+      "goods":"일반공개일 SQEX 부스에서 FFVII 리벨레이션×FFXIV 오리지널 백을 안내합니다. 배포 조건과 수량은 공식 세부 안내를 확인하세요.",
+      "salesNote":"상품 판매는 별도 SQUARE ENIX SHOP 09-W69로 연결됩니다.",
+      "relatedBooths":["09-W69"],"sources":[{"label":"스퀘어에닉스 TGS 공식","url":"https://web.jp.square-enix.com/tgs26/"}]
+    },
+    "09-W69": {
+      "demo":"unknown","ticket":"unknown","sales":"yes",
+      "activities":["SQUARE ENIX SHOP — 게임·코믹스 관련 상품, 부스 내 캡슐토이 판매"],
+      "salesNote":"회장 가격(세금 포함): 드래곤퀘스트 40주년 쿠키 2,980엔, 슬라임 퀼팅 숄더백 4,400엔(1인 5개), 슬라임 대형 토트백 6,380엔(1인 5개). 사인 상품은 온라인 추첨 판매이며 이 부스에서는 취급하지 않습니다.",
+      "goods":"1회 계산 8,000엔 이상 구매 시 스퀘어 백 1개를 선착순 증정합니다. 소진 시 종료됩니다.",
+      "relatedBooths":["03-S01"],"sources":[{"label":"SQEX 공식 판매·가격 안내","url":"https://www.jp.square-enix.com/music/sem/page/tgs2026/"}]
+    },
+    "05-S01": {
+      "demo":"yes","ticket":"unknown","sales":"unknown",
+      "activities":["Castlevania: Belmont’s Curse / 와이와이 월드 Craft 시연", "SILENT HILL: Townfall 몰입형 시어터·기념 전시·키워드 행사"],
+      "goods":"Castlevania 시연 시 타로 카드 아크릴 스탠드(6종 중 랜덤), 공식 X 팔로우·리포스트 시 쇼퍼. 와이와이 월드 Craft 시연 시 티셔츠. 수량 한정이며 작품별 조건이 다릅니다.",
+      "salesNote":"KONAMI STYLE TGS STORE 관련 굿즈 판매는 11-W18로 연결됩니다.",
+      "relatedBooths":["11-W18"],"sources":[{"label":"코나미 공식 출전 안내 9/4","url":"https://www.konami.com/games/corporate/ja/news/release/20260904/"}]
+    },
+    "11-W18": {
+      "sales":"yes","demo":"unknown","ticket":"unknown",
+      "activities":["KONAMI STYLE TGS STORE — 코나미 관련 굿즈 판매"],
+      "salesNote":"세금 포함 3,000엔 이상 구매 시 코나미 커맨드 스티커를 증정한다고 발표했습니다. 품목별 가격·재고는 공식 판매 안내를 확인하세요.",
+      "relatedBooths":["05-S01"],"sources":[{"label":"코나미 공식 판매 안내","url":"https://www.konami.com/games/corporate/ja/news/release/20260904/"}]
+    },
+    "08-S01": {
+      "demo":"yes","ticket":"unknown","sales":"unknown",
+      "activities":["Sanrio Party Land / Sanrio Kawaii Me Live! 선행 시연", "프라가리아 메모리즈 Color of Wishes 벽면 전시·캐릭터 무대"],
+      "goods":"방문 특전 선바이저(3종 중 랜덤). #サンリオTGS 태그로 부스 사진·소감을 X에 올리면 스티커를 안내합니다. 시연 특전은 별도 조건이 있습니다.",
+      "sources":[{"label":"산리오 게임즈 TGS 공식","url":"https://www.sanrio-games.jp/tgs2026/"}]
+    }
+  }
+}

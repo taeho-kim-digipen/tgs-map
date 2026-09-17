@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "source": "sources/2026TGS_MAP_EN.pdf",
+  "note": "Diagram-space floor envelopes digitized from the supplied official PDF. Booth bounds are subtracted at runtime. Insets, stages and the 2F strip in the 9–11 overview are excluded. No connections between different diagrams or floors are inferred; these are schematic paths, not surveyed indoor routes.",
+  "maps": {
+    "main": {
+      "cell": 0.5,
+      "clearance": 0.15,
+      "walkable": [
+        [
+          23,
+          30,
+          239,
+          171
+        ],
+        [
+          253,
+          30,
+          577,
+          171
+        ],
+        [
+          589,
+          30,
+          909,
+          171
+        ],
+        [
+          237,
+          47,
+          255,
+          55
+        ],
+        [
+          237,
+          97,
+          255,
+          105
+        ],
+        [
+          237,
+          145,
+          255,
+          153
+        ],
+        [
+          575,
+          47,
+          591,
+          55
+        ],
+        [
+          575,
+          97,
+          591,
+          105
+        ],
+        [
+          575,
+          145,
+          591,
+          153
+        ]
+      ],
+      "obstacles": [
+        [
+          803,
+          32,
+          906,
+          73
+        ],
+        [
+          805,
+          120,
+          904,
+          166
+        ]
+      ]
+    },
+    "school": {
+      "cell": 0.5,
+      "clearance": 0.1,
+      "walkable": [
+        [
+          4,
+          7,
+          255,
+          180
+        ]
+      ],
+      "obstacles": []
+    },
+    "halls911": {
+      "cell": 0.5,
+      "clearance": 0.1,
+      "walkable": [
+        [
+          42,
+          14,
+          205,
+          683
+        ]
+      ],
+      "obstacles": [
+        [
+          55,
+          17,
+          130,
+          109
+        ],
+        [
+          135,
+          116,
+          171,
+          201
+        ]
+      ]
+    },
+    "indie9": {
+      "cell": 0.25,
+      "clearance": 0.05,
+      "walkable": [
+        [
+          2,
+          12,
+          113,
+          278
+        ]
+      ],
+      "obstacles": []
+    },
+    "selected80": {
+      "cell": 0.25,
+      "clearance": 0.05,
+      "walkable": [
+        [
+          27,
+          9,
+          51,
+          248
+        ]
+      ],
+      "obstacles": []
+    },
+    "business9": {
+      "cell": 0.25,
+      "clearance": 0.05,
+      "walkable": [
+        [
+          2,
+          14,
+          113,
+          178
+        ]
+      ],
+      "obstacles": []
+    }
+  }
+}

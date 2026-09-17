@@ -1,0 +1,18 @@
+{
+  "name": "tgs-2026-interest-map",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portable handoff of the existing official TGS 2026 interactive map",
+  "scripts": {
+    "dev": "node scripts/serve.cjs",
+    "dev:phone": "node scripts/serve.cjs --lan",
+    "start": "node scripts/serve.cjs --no-reload",
+    "test": "node tests/check-interactions.cjs && node tests/check-server.cjs && node tests/check-travel.cjs && node tests/check-navigation.cjs && node tests/check-content.cjs",
+    "test:server": "node tests/check-server.cjs",
+    "test:travel": "node tests/check-travel.cjs",
+    "test:navigation": "node tests/check-navigation.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

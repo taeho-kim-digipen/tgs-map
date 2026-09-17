@@ -1,0 +1,65 @@
+{
+  "source_commit": "0c2cff2fd6134be715eb8a3d5460d586fdc1d45a",
+  "files": [
+    {
+      "original_path": ".gitignore",
+      "export_path": "handoff/original-gitignore",
+      "sha256": "e91060604f172a0ee9133be4debd753be468ab0122ec1dd0001f592e10affc38"
+    },
+    {
+      "original_path": ".openai/hosting.json",
+      "export_path": "handoff/original-hosting.json",
+      "sha256": "fffbbacff30288d0fc788cd2156c19a7dc9c1ec1b5fcc0ba3eddb8271b97bb06"
+    },
+    {
+      "original_path": "README.md",
+      "export_path": "handoff/ORIGINAL_README.md",
+      "sha256": "96e84d64c20f0e283906cf5600818cafef619c44202db1b45885c4c28456b459"
+    },
+    {
+      "original_path": "dist/app.js",
+      "export_path": "dist/app.js",
+      "sha256": "f4d7a716198ef144b21e507a6b63383e7435041d7aaecdb61e6c27e237ad31ba"
+    },
+    {
+      "original_path": "dist/concourse-official.svg",
+      "export_path": "dist/concourse-official.svg",
+      "sha256": "f0e490900af6dc6c865b65145f9ce122edbcb68642665cc4b65a24a48346e493"
+    },
+    {
+      "original_path": "dist/index.html",
+      "export_path": "dist/index.html",
+      "sha256": "3f673eb8a4262c1665083df1271ba0d066823c2fed4d92eed7907877e42b69eb"
+    },
+    {
+      "original_path": "dist/main-official.svg",
+      "export_path": "dist/main-official.svg",
+      "sha256": "1a2ec21889561e19332559dbcde10e5435f2a182d546651084d08a823ecbe249"
+    },
+    {
+      "original_path": "dist/map-data.json",
+      "export_path": "dist/map-data.json",
+      "sha256": "d5c4ed19609fa16e6c81b1374faa7b00116fadecc8fb8eb21a9c658f33c11d71"
+    },
+    {
+      "original_path": "dist/school-official.svg",
+      "export_path": "dist/school-official.svg",
+      "sha256": "c956649d88ff9b72e48d43293372d4436d0ae83d3cc4d04d8a28a65b9edfd629"
+    },
+    {
+      "original_path": "dist/style.css",
+      "export_path": "dist/style.css",
+      "sha256": "eb4b781af589a5706e84d5f54fac19661bcc653d079e329582b1c75af32d7b95"
+    },
+    {
+      "original_path": "extract_map.py",
+      "export_path": "extract_map.py",
+      "sha256": "b1c03c5d37b82ee31097626e708eeb2b9cd4118c1a8f80ebe45302f705f912bf"
+    },
+    {
+      "original_path": "sources/2026TGS_MAP_EN.pdf",
+      "export_path": "sources/2026TGS_MAP_EN.pdf",
+      "sha256": "29956d59794d2704cc38f95c1da0256727b3e95d2da832f770961de67eed8559"
+    }
+  ]
+}

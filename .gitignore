@@ -1,0 +1,11 @@
+.sites-runtime/
+releases/
+.deps/
+tmp/
+__pycache__/
+*.pyc
+
+node_modules/
+.env
+.env.*
+!.env.example

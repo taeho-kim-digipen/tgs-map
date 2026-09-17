@@ -1,0 +1,23 @@
+{
+  "version":1,
+  "surveyed":false,
+  "method":"Approximate registration of TGS diagram panels to OSM building outlines, constrained by official hall dimensions. Diagram axes are kept upright; no geodetic accuracy is claimed for booth positions. One-point onsite GPS correction is available.",
+  "sources":["https://www.openstreetmap.org/way/374815914","https://www.openstreetmap.org/way/211128545","https://www.m-messe.co.jp/docs/facility/messe_facilityguide.pdf","https://www.m-messe.co.jp/organizers/guide/exhibitionhall/guide_exibition1-8","https://www.m-messe.co.jp/organizers/guide/exhibitionhall/guide_exibition9-11","https://tgs.cesa.or.jp/2026/en/caution"],
+  "geography":{"latitude":35.6485,"longitude":140.0345,"axisX":[-0.7454283767798111,-0.6665857297388057],"offset":[430,250],"width":680,"height":650,"cell":0.25},
+  "panels":[
+    {"id":"main78","map":"main","from":[23,30,239,171],"to":[-354,-202,-234,-89.5]},
+    {"id":"main46","map":"main","from":[253,30,577,171],"to":[-216,-202,-36,-89.5]},
+    {"id":"main13","map":"main","from":[589,30,909,171],"to":[-15,-202,165,-89.5]},
+    {"id":"halls911","map":"halls911","from":[55,17,203,683],"to":[-68,121,28,313]}
+  ],
+  "insets":[
+    {"map":"school","from":[4,7,255,180],"parent":"main13","to":[805,120,904,166]},
+    {"map":"indie9","from":[2,12,113,278],"parent":"halls911","to":[55,17,130,109]},
+    {"map":"business9","from":[2,14,113,178],"parent":"halls911","to":[135,116,171,201]},
+    {"map":"selected80","from":[27,9,51,248],"parent":"halls911","to":[9,105,26,285]}
+  ],
+  "mainStairs":[[103,169],[212,169],[275,169],[535,169],[620,169],[870,169]],
+  "walkingWayIds":[1342695558,1410239158,1342695556,1342695557,211128546,305581002],
+  "hall10Stairs":[[-102.38,228.92],[-76,228.92]],
+  "transitionNote":"2F central mall → 2F connecting bridge → 9–11 hall esplanade → stairs/escalator to 1F. The campus is a flattened floor-aware schematic: floor changes exist only at the displayed stair links. Not an accessible-route planner. Public-day inter-hall movement is restricted before 10:00 JST."
+}

@@ -1,0 +1,50 @@
+/* Thumb-accessible navigation. The map owns all remaining vertical space. */
+#app:not([data-mode=pc]){grid-template-areas:"header" "map" "favorites" "controls";grid-template-rows:auto minmax(0,1fr) auto auto}
+#app:not([data-mode=pc]) .control-panel{border-top:1px solid #cad5cd;border-bottom:0;padding-bottom:2px}
+.hall-nav{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#afc1b7 transparent;touch-action:pan-x;padding-bottom:6px}
+.hall-nav button{flex:0 0 auto;min-width:63px;min-height:40px;padding:7px 10px}
+.visit-legend{display:flex;align-items:center;gap:6px;padding:7px 12px 2px;font-size:11px;color:#63746c;white-space:nowrap}
+.visit-legend label{display:flex;align-items:center;gap:4px;margin-left:auto}
+.visit-legend select{font:inherit;max-width:98px;min-height:32px;border:1px solid #c6d2cb;border-radius:5px;background:white;color:#263e36}
+.visit-key,.visit-badge{display:inline-flex;gap:3px;align-items:center}
+.visit-key b,.visit-badge{font-size:12px;font-weight:650;border-radius:6px;padding:3px 5px}
+.visit-demo{color:#005fa3;background:#e8f4ff}.visit-ticket{color:#904400;background:#fff0d7}.visit-sale{color:#723398;background:#f4eafa}.visit-unknown{color:#626b70;background:#eff1f1}
+.visit-key b{display:flex;align-items:center;justify-content:center;padding:3px}
+.visit-key svg,.visit-badge svg{width:18px;height:18px;flex-shrink:0}
+.visit-markers{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:3}
+.visit-marker{position:absolute;transform:translate(-100%,0);display:flex;gap:1px;padding:2px;border-radius:5px;background:#fffffff2;box-shadow:0 1px 3px #19312926;pointer-events:none}
+.visit-marker .visit-badge{display:flex;padding:1px;border-radius:3px;background:transparent}
+.visit-marker svg{width:16px;height:16px}
+.booth.visit-demo-outline{stroke:#147ab6;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.booth.visit-ticket-outline{stroke:#b36713;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.booth.visit-sale-outline{stroke:#8450a0;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.booth.selected{stroke:var(--accent);stroke-width:2.5;fill:#e7225930;stroke-dasharray:none}
+.booth.focused{stroke:#122124;stroke-width:2.5;stroke-dasharray:5 3}
+.booth.visit-muted{opacity:.22}
+.visit-status{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.visit-section{border-top:1px solid #e1e7e1;padding-top:9px;margin-top:10px}
+.visit-section h3{font-size:14px;margin:0 0 5px;color:#223f35}
+.detail .visit-section p{font-size:13px;line-height:1.55;margin:5px 0}
+.visit-section ul{padding-left:18px;margin:5px 0;font-size:13px;line-height:1.6;color:#496155}
+.visit-source{font-size:11px!important;color:#76837a!important}
+.visit-links{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.visit-links a{font-size:12px;color:#246754;text-underline-offset:3px}
+.related-booth{padding:8px 10px;min-height:40px;background:#edf3ed;border:1px solid #c3d1c4;border-radius:6px;color:#224e3d;font:inherit;font-size:13px}
+.detail .interest-button{margin-top:10px}
+#app[data-mode=portrait] .favorites{padding:7px 12px}
+#app[data-mode=portrait] .favorites-heading{margin-bottom:6px}
+#app[data-mode=portrait] .hint{font-size:10px;margin-top:5px}
+#app[data-mode=portrait] .facility-nav button{min-height:44px}
+#app[data-mode=portrait] .detail{max-height:calc(100% - 20px)}
+#app[data-mode=landscape] .control-panel{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:4px 10px;padding:3px 12px}
+#app[data-mode=landscape] .visit-legend{grid-column:1/-1;padding:0;gap:8px}
+#app[data-mode=landscape] .hall-nav{display:flex;min-width:0;padding:0 0 2px;gap:4px;overflow-x:auto}
+#app[data-mode=landscape] .hall-nav button{min-width:60px;min-height:32px;font-size:12px;padding:4px 7px}
+#app[data-mode=landscape] .facility-nav{min-width:0}
+#app[data-mode=landscape] .visit-legend select{min-height:28px}
+#app[data-mode=pc] .hall-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;padding:0;gap:7px}
+#app[data-mode=pc] .control-panel{overflow:auto}
+#app[data-mode=pc] .visit-legend{padding:0 0 12px;flex-wrap:wrap;white-space:normal;gap:8px}
+#app[data-mode=pc] .visit-legend label{margin:0;flex-basis:100%}
+#app:not([data-mode=pc]).search-open{grid-template-areas:"header" "map";grid-template-rows:auto minmax(0,1fr)}
+@media(max-width:360px){.visit-legend{gap:4px;font-size:10px;padding-left:8px;padding-right:8px}.visit-legend label>span{display:none}.visit-legend select{max-width:79px}}
