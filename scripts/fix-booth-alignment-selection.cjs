@@ -55,6 +55,11 @@ write('scripts/build-campus.py', py);
 // 2) Tap = select/location only. Details open ONLY through the small "보기" card.
 let app = read('dist/app.js');
 app = replaceOne(app,
+`    for(const button of wrap.querySelectorAll('button'))button.setAttribute('aria-pressed',String(active&&button.dataset.floor===floorMode));`,
+`    for(const button of wrap.querySelectorAll?.('button')||[])button.setAttribute('aria-pressed',String(active&&button.dataset.floor===floorMode));`,
+'floor switch test compatibility');
+
+app = replaceOne(app,
 `    if (focused===id) showDetail(id);`,
 `    if(focused===id){if($('detail').hidden)renderBoothPeek(id);else showDetail(id);}`,
 'toggle refresh');
