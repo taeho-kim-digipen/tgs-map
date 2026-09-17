@@ -10,11 +10,14 @@
   let navigation=null, beforeNavigation=null, controlsHidden=false;
   const pointers = new Map();
   let boothNodes = new Map();
-  let scene, favoritePage=0;
+  let scene, floorOverlayLayer, favoritePage=0;
   const vectorMaps=new Map();
   let modePreference='auto';
   const PLAN_MIGRATION_KEY='tgs2026-planned-booths-v2';
+  const FLOOR_UI_VERSION='v3';
   let campusViewBounds=new Map();
+  let floorRegions={first:[],second:[]};
+  let floorMode='all';
   let visitFilter='all';
   try{modePreference=localStorage.getItem('tgs2026-screen-mode')||'auto';}catch{}
   if(!['auto','portrait','landscape','pc'].includes(modePreference))modePreference='auto';
@@ -67,6 +70,41 @@
   const nameOf = b => b.shortName || b.name;
   const locationOf = b => b.locationLabel||`${b.hall}홀`;
   const geometryOf=(b,mapId=activeMap?.id)=>!b?null:mapId==='campus'&&b.campus?{...b,...b.campus,map:'campus'}:b.map===mapId?b:null;
+  const campusFloorOf=item=>String(item?.floor||'').toUpperCase().startsWith('2')?'2f':'1f';
+  function detailTier(){
+    if(!activeMap||activeMap.id!=='campus')return 'full';
+    if(scale<minScale*1.55)return 'overview';
+    if(scale<minScale*2.5)return 'medium';
+    return 'full';
+  }
+  function syncFloorSwitchUI(){
+    const wrap=$('floor-switch');if(!wrap)return;
+    const active=activeMap?.id==='campus';wrap.hidden=!active;
+    for(const button of wrap.querySelectorAll('button'))button.setAttribute('aria-pressed',String(active&&button.dataset.floor===floorMode));
+  }
+  function renderFloorOverlay(){
+    if(!floorOverlayLayer)return;
+    floorOverlayLayer.replaceChildren();
+    if(activeMap?.id!=='campus'||floorMode==='all')return;
+    const masks=floorMode==='2f'?floorRegions.first:floorRegions.second;
+    const label=floorMode==='2f'?'1F':'2F';
+    for(const bounds of masks||[]){
+      if(!bounds)continue;
+      const [x0,y0,x1,y1]=bounds;
+      floorOverlayLayer.append(svgEl('rect',{x:x0,y:y0,width:x1-x0,height:y1-y0,class:'floor-mask'}));
+      floorOverlayLayer.append(svgEl('rect',{x:x0,y:y0,width:x1-x0,height:y1-y0,rx:6,ry:6,class:'floor-mask-outline'}));
+      const text=svgEl('text',{x:x0+10,y:y0+19,class:'floor-mask-label'});text.textContent=`${label} 숨김`;floorOverlayLayer.append(text);
+    }
+  }
+  function setFloorMode(mode,{silent=false}={}){
+    if(activeMap?.id!=='campus'){floorMode='all';syncFloorSwitchUI();return;}
+    floorMode=mode==='2f'?'2f':'1f';
+    $('map-floor').textContent=floorMode==='2f'?'2F · 센트럴몰':'1F · 메인 전시관';
+    syncFloorSwitchUI();
+    updateSelection();
+    renderTransform();
+    if(!silent)announce(floorMode==='2f'?'2층만 표시':'1층만 표시');
+  }
   function visitIcon(kind){
     const icon=svgEl('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'currentColor','stroke-width':1.8,'stroke-linecap':'round','stroke-linejoin':'round','aria-hidden':'true'});
     const paths={demo:'M7 7h10a4 4 0 0 1 3.9 3.1l1 5.6a2.5 2.5 0 0 1-4.2 2.3L15 15H9l-2.7 3a2.5 2.5 0 0 1-4.2-2.3l1-5.6A4 4 0 0 1 7 7ZM7 9.5v5M4.5 12h5M16 11h.01M19 13h.01',ticket:'M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V6Zm12 0v2m0 3v2m0 3v2',sale:'M5 7h14l1 14H4L5 7Zm3 0V5a4 4 0 0 1 8 0v2',unknown:'M9.2 8.5a3 3 0 0 1 5.8 1c0 2-3 2-3 4M12 17h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z'};
@@ -136,16 +174,27 @@
   }
   function renderFacilities(){
     if(!activeMap||!data)return;
-    const layer=$('facility-markers');layer.replaceChildren();const clusters=[];
-    for(const facility of data.facilities.map(f=>geometryOf(f)).filter(Boolean)){
+    const layer=$('facility-markers');layer.replaceChildren();const clusters=[];const tier=detailTier();
+    const radius=activeMap.id==='campus'?(tier==='overview'?52:tier==='medium'?38:27):27;
+    for(const original of data.facilities){
+      const facility=geometryOf(original);if(!facility)continue;
+      if(activeMap.id==='campus'){
+        if(campusFloorOf(original)!==floorMode)continue;
+        if(tier==='overview'){
+          if(floorMode==='1f'&&original.category!=='entrance')continue;
+          if(floorMode==='2f'&&!['entrance','locker','info'].includes(original.category))continue;
+          if(original.category==='restroom')continue;
+        }else if(tier==='medium'&&original.category==='restroom')continue;
+      }
       const x=tx+facility.x*scale,y=ty+facility.y*scale;
       if(x< -15||x>viewport.clientWidth+15||y< -15||y>viewport.clientHeight+15)continue;
-      const cluster=clusters.find(c=>c.category===facility.category&&Math.hypot(c.x-x,c.y-y)<27);
+      const cluster=clusters.find(c=>c.category===facility.category&&Math.hypot(c.x-x,c.y-y)<radius);
       if(cluster){const n=cluster.items.length;cluster.x=(cluster.x*n+x)/(n+1);cluster.y=(cluster.y*n+y)/(n+1);cluster.items.push(facility);}
       else clusters.push({category:facility.category,x,y,items:[facility]});
     }
     for(const c of clusters){
       const button=document.createElement('button');button.className=`facility-marker ${c.category}`;button.style.left=`${c.x}px`;button.style.top=`${c.y}px`;button.style.backgroundColor=categories[c.category].color;
+      if(activeMap.id==='campus'&&tier!=='full')button.classList.add('is-muted');
       const title=c.items.length>1?`${categories[c.category].label} ${c.items.length}곳 · 확대`:c.items[0].name;
       button.setAttribute('aria-label',title);button.title=title;button.append(facilityIcon(c.category));
       if(c.items.length>1){const count=document.createElement('span');count.className='cluster-count';count.textContent=c.items.length;button.append(count);}
@@ -159,6 +208,7 @@
   function focusFacility(id){
     const original=data.facilities.find(f=>f.id===id);const f=geometryOf(original)||original;if(!f)return;
     closeResults(false);closeDetail();if(activeMap.id!==f.map)setMap(f.map);activeView=null;
+    if(activeMap.id==='campus')setFloorMode(campusFloorOf(original),{silent:true});
     for(const el of $('hall-nav').children)el.setAttribute('aria-pressed',String(el.dataset.view===f.map));
     fitBounds([f.x-42,f.y-30,f.x+42,f.y+30],45);
     const panel=$('detail');panel.replaceChildren();
@@ -188,14 +238,17 @@
   function updateSelection() {
     for (const [id,node] of boothNodes) {
       const b=byId.get(id),info=visitOf(b),enabled=visitFilter!=='off';
-      node.classList.toggle('visit-demo-outline',enabled&&info.demo==='yes');
-      node.classList.toggle('visit-ticket-outline',enabled&&needsTicket(info));
-      node.classList.toggle('visit-sale-outline',enabled&&info.sales==='yes'&&!needsTicket(info));
-      node.classList.toggle('visit-muted',!matchesVisit(b));
-      node.classList.toggle('selected',favorites.has(id));
-      node.classList.toggle('focused',focused===id);
-      node.classList.toggle('nav-destination',navigation?.targetId()===id);
-      node.setAttribute('aria-pressed',String(favorites.has(id)));
+      const hiddenFloor=activeMap?.id==='campus'&&floorMode==='2f';
+      node.classList.toggle('hidden-floor',hiddenFloor);
+      node.classList.toggle('visit-demo-outline',enabled&&!hiddenFloor&&info.demo==='yes');
+      node.classList.toggle('visit-ticket-outline',enabled&&!hiddenFloor&&needsTicket(info));
+      node.classList.toggle('visit-sale-outline',enabled&&!hiddenFloor&&info.sales==='yes'&&!needsTicket(info));
+      node.classList.toggle('visit-muted',!hiddenFloor&&!matchesVisit(b));
+      node.classList.toggle('selected',!hiddenFloor&&favorites.has(id));
+      node.classList.toggle('focused',!hiddenFloor&&focused===id);
+      node.classList.toggle('nav-destination',!hiddenFloor&&navigation?.targetId()===id);
+      node.setAttribute('aria-pressed',String(!hiddenFloor&&favorites.has(id)));
+      node.setAttribute('tabindex',hiddenFloor?'-1':'0');
     }
     renderLabels();renderVisitMarkers();
   }
@@ -225,13 +278,15 @@
   function renderLabels() {
     if(!activeMap)return;
     const layer=$('labels');layer.replaceChildren();
+    if(activeMap.id==='campus'&&floorMode==='2f')return;
+    const tier=detailTier();if(activeMap.id==='campus'&&tier==='overview')return;
     const labels=[];
     for(const id of favorites){
       const b=geometryOf(byId.get(id));if(!b)continue;
       const r=b.bounds,x=tx+(r[0]+r[2])/2*scale,y=ty+r[1]*scale;
       if(x<0||x>viewport.clientWidth||y<-15||y>viewport.clientHeight+30)continue;
       const label=document.createElement('span');label.className='map-label';
-      const isCompact=scale<.9&&favorites.size>7;
+      const isCompact=(activeMap.id==='campus'&&tier==='medium')||(scale<.9&&favorites.size>7);
       label.textContent=isCompact?'★':`★ ${nameOf(b)}`;if(isCompact)label.classList.add('compact');
       let labelY=y-4;
       for(let tries=0;tries<5&&labels.some(p=>Math.abs(p.x-x)<130&&Math.abs(p.y-labelY)<26);tries++)labelY-=27;
@@ -241,6 +296,7 @@
   }
   function renderVisitMarkers(){
     const layer=$('visit-markers');layer.replaceChildren();if(!activeMap||visitFilter==='off')return;
+    if(activeMap.id==='campus'&&(floorMode==='2f'||detailTier()!=='full'))return;
     const occupied=[];
     for(const b of data.booths.map(b=>geometryOf(b)).filter(b=>b&&matchesVisit(b))){
       const info=visitOf(b),marks=[];
@@ -250,7 +306,6 @@
       if(!marks.length)continue;
       const r=b.bounds,x=tx+r[2]*scale-2,y=ty+r[1]*scale+2,width=marks.length*19+5;
       if(x<width||y<0||x>viewport.clientWidth||y>viewport.clientHeight-22)continue;
-      // Anchor to the booth's upper-right corner; never cover its central name.
       if(occupied.some(p=>x-width<p.x&&x>p.left&&Math.abs(p.y-y)<23))continue;
       occupied.push({x,left:x-width,y});const marker=document.createElement('span');marker.className='visit-marker';
       marker.dataset.booth=b.id;
@@ -271,7 +326,7 @@
       const w=viewport.clientWidth,h=viewport.clientHeight;
       svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
       scene?.setAttribute('transform',`translate(${tx} ${ty}) scale(${scale})`);
-      renderLabels();renderFacilities();renderVisitMarkers();navigation?.update();
+      renderFloorOverlay();renderLabels();renderFacilities();renderVisitMarkers();navigation?.update();
     });
   }
   function fitBounds(bounds,padding=24) {
@@ -288,7 +343,7 @@
   }
   function setMap(mapId) {
     activeMap=data.maps.find(m=>m.id===mapId);if(!activeMap)throw new Error('지도를 찾을 수 없습니다.');
-    $('map-floor').textContent=activeMap.floor;$('campus-credit').hidden=mapId!=='campus';
+    $('campus-credit').hidden=mapId!=='campus';
     minScale=Math.min(viewport.clientWidth/activeMap.width,viewport.clientHeight/activeMap.height)*.8;
     maxScale=activeMap.maxScale||32;
     svg.setAttribute('viewBox',`0 0 ${viewport.clientWidth} ${viewport.clientHeight}`);svg.setAttribute('width','100%');svg.setAttribute('height','100%');
@@ -301,6 +356,7 @@
     base.setAttribute('class','official-map');base.setAttribute('pointer-events','none');
     base.setAttribute('aria-hidden','true');base.setAttribute('focusable','false');
     base.setAttribute('overflow','hidden');scene.append(base);
+    floorOverlayLayer=svgEl('g',{'data-layer':'floor-overlay'});scene.append(floorOverlayLayer);
     for(const b of data.booths.map(b=>geometryOf(b,mapId)).filter(Boolean)){
       const path=svgEl('path',{d:b.path,class:'booth','data-booth':b.id,tabindex:0,role:'button','aria-label':`${b.name}, ${b.code}. 길게 누르거나 Enter 키로 관심 표시. 두 번 누르거나 Shift Enter 키로 경로 안내.`, 'aria-pressed':favorites.has(b.id)});
       path.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.shiftKey){e.preventDefault();navigation?.toggleBooth(b.id);}else if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle(b.id);}if(e.key==='Escape')closeDetail();});
@@ -311,7 +367,14 @@
       const rect=svgEl('rect',{x:target.bounds[0],y:target.bounds[1],width:target.bounds[2]-target.bounds[0],height:target.bounds[3]-target.bounds[1],fill:'transparent','data-view':target.view,tabindex:0,role:'button','aria-label':target.label});
       rect.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectView(target.view);}});scene.append(rect);
     }
-    updateSelection();navigation?.mapChanged();
+    if(activeMap.id==='campus'){
+      if(floorMode==='all')floorMode='1f';
+      $('map-floor').textContent=floorMode==='2f'?'2F · 센트럴몰':'1F · 메인 전시관';
+    }else{
+      floorMode='all';
+      $('map-floor').textContent=activeMap.floor;
+    }
+    syncFloorSwitchUI();updateSelection();renderFloorOverlay();navigation?.mapChanged();
   }
   function selectView(id) {
     const view=data.views.find(v=>v.id===id);if(!view)return;
@@ -320,6 +383,8 @@
     const campusBounds=campusViewBounds.get(id);
     if(campusBounds){
       if(!activeMap||activeMap.id!=='campus')setMap('campus');
+      if(id==='concourse')setFloorMode('2f',{silent:true});
+      else if(id!=='campus')setFloorMode('1f',{silent:true});
       fitBounds(campusBounds,id==='campus'?18:34);
     }else{
       if(!activeMap||activeMap.id!==view.map)setMap(view.map);
@@ -332,6 +397,7 @@
     const original=byId.get(id),b=geometryOf(original)||original;if(!b)return;
     closeResults(false);
     if(activeMap.id!==b.map)setMap(b.map);
+    if(activeMap.id==='campus')setFloorMode('1f',{silent:true});
     activeView=null;for(const el of $('hall-nav').children)el.setAttribute('aria-pressed','false');
     const r=b.bounds,cx=(r[0]+r[2])/2,cy=(r[1]+r[3])/2;
     const bw=Math.max(70,r[2]-r[0]+34),bh=Math.max(60,r[3]-r[1]+40);
@@ -432,6 +498,7 @@
   window.addEventListener('blur',()=>{cancelHold();pointers.clear();gesture=null;});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelHold();pointers.clear();gesture=null;}});
   $('zoom-in').addEventListener('click',()=>zoom(1.5));$('zoom-out').addEventListener('click',()=>zoom(1/1.5));$('fit').addEventListener('click',()=>selectView(data.views.find(v=>v.map===activeMap?.id)?.id||'all'));
+  $('floor-switch')?.addEventListener('click',e=>{const button=e.target.closest('button[data-floor]');if(!button||activeMap?.id!=='campus')return;setFloorMode(button.dataset.floor);});
   $('map-controls-toggle').addEventListener('click',()=>{
     if(navigation?.isActive()){navigation.toggleControls();return;}
     controlsHidden=!controlsHidden;activeView=null;
@@ -460,7 +527,7 @@
     renderResults();
     minScale=Math.min(w/activeMap.width,h/activeMap.height)*.8;
     if(navigation?.isActive()){navigation.resize();}
-    else if(activeView){const view=data.views.find(v=>v.id===activeView);if(view)fitBounds(view.bounds);}
+    else if(activeView){const campusBounds=campusViewBounds.get(activeView),view=data.views.find(v=>v.id===activeView);if(campusBounds)fitBounds(campusBounds,activeView==='campus'?18:34);else if(view)fitBounds(view.bounds);}
     else if(oldSize){tx+=(w-oldSize.w)/2;ty+=(h-oldSize.h)/2;constrain();renderTransform();}
     oldSize={w,h};
   }).observe(viewport);
@@ -505,9 +572,9 @@
         ['selected80',boothCampusBounds(b=>b.map==='selected80',7)],
         ['business9',boothCampusBounds(b=>b.map==='business9',7)]
       ]);
-      const concourseRects=data.facilities.filter(f=>f.map==='concourse'&&f.campus).map(f=>[f.campus.x-10,f.campus.y-10,f.campus.x+10,f.campus.y+10]);
-      const concourseBounds=unionBounds(concourseRects,10);if(concourseBounds)campusViewBounds.set('concourse',concourseBounds);
+      const concourseBounds=[45,168,635,275];campusViewBounds.set('concourse',concourseBounds);
       for(const [key,value] of [...campusViewBounds])if(!value)campusViewBounds.delete(key);
+      floorRegions={first:[boothCampusBounds(b=>['main','school'].includes(b.map),16),boothCampusBounds(b=>['halls911','indie9','selected80','business9'].includes(b.map),16)].filter(Boolean),second:[concourseBounds]};
       byId=new Map(data.booths.map(b=>[b.id,b]));
       for(const b of data.booths)b.searchText=normal(`${b.name} ${b.shortName||''} ${b.officialName} ${b.code} ${boothAliases[b.id]||''} ${(b.exhibitors||[]).join(' ')} ${(visitOf(b).activities||[]).join(' ')} ${visitOf(b).goods||''} ${b.locationLabel||''}`);
       try{const raw=localStorage.getItem(STORAGE_KEY);if(raw!==null){const list=JSON.parse(raw);if(!Array.isArray(list))throw new Error('storage');favorites=new Set(list.filter(id=>byId.has(id)));}else{favorites=new Set(data.defaults.filter(id=>byId.has(id)));save();}}
@@ -516,7 +583,7 @@
       for(const v of data.views){const b=document.createElement('button');b.textContent=v.label;b.dataset.view=v.id;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectView(v.id));$('hall-nav').append(b);}
       for(const [id,category] of Object.entries(categories)){const button=document.createElement('button');button.style.setProperty('--facility-color',category.color);button.append(facilityIcon(id));const label=document.createElement('span');label.textContent=category.label;button.append(label);button.setAttribute('aria-label',`${category.label} 위치 찾기`);button.addEventListener('click',()=>{const items=data.facilities.filter(f=>f.category===id);$('booth-search').blur();if(items.length===1)focusFacility(items[0].id);else openResults(items,category.label);});$('facility-nav').append(button);}
       const source=$('source-info'),p=document.createElement('p');p.textContent=`공식 영문 배치도 · 2026년 9월 공개본 · ${data.booths.length}개 부스 구역`;
-      const p2=document.createElement('p');p2.textContent='방문 계획에서 정한 부스들은 처음 한 번 관심 부스로 자동 추가됩니다. 홀 버튼은 별도 지도로 바꾸지 않고 멧세 전체 지도에서 해당 위치로 이동합니다.';
+      const p2=document.createElement('p');p2.textContent='홀 버튼은 멧세 전체 지도 안에서 해당 위치로 이동합니다. 우측의 1층·2층 버튼으로 층별 지도와 시설만 골라 볼 수 있으며, 축소 상태에서는 아이콘을 자동으로 줄여 표시합니다.';
       const a=document.createElement('a');a.href=data.source;a.target='_blank';a.rel='noopener';a.textContent='TGS 공식 지도 원본 보기 ↗';source.append(p,p2,a);
       await Promise.all(data.maps.map(async m=>{
         const response=await fetch(m.image);if(!response.ok)throw new Error('vector map');

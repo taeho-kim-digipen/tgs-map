@@ -1,6 +1,6 @@
 'use strict';
 // deploy-campus-ui-v2-2026-09-18
-const VERSION = '2026.09.18.1';
+const VERSION = '2026.09.18.2';
 const BASE = self.registration.scope;
 const PREFIX = 'tgs2026-travel:' + new URL(BASE).pathname + ':';
 const CACHE = PREFIX + VERSION;
