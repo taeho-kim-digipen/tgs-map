@@ -19,6 +19,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Prepare patch script
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/apply-floor-density-v3.cjs')
+          s=p.read_text()
+          s=s.replace('${','\\${')
+          p.write_text(s)
+          PY
       - name: Apply UI patch
         run: node scripts/apply-floor-density-v3.cjs
       - name: Validate JavaScript
