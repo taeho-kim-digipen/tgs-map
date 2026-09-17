@@ -45,6 +45,11 @@ function fullOverlay(mapId, sourceAnchor, targetAnchor, extra = '') {
   const t = transform(sourceAnchor, targetAnchor);
   return `<image href="./${esc(file)}" x="0" y="0" width="${m.width}" height="${m.height}" transform="matrix(${t[0]} 0 0 ${t[1]} ${t[2]} ${t[3]})" preserveAspectRatio="none" pointer-events="none" ${extra}/>`;
 }
+function clippedOverlay(mapId, sourceAnchor, targetAnchor) {
+  const id = `clip-${String(mapId).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const [x0,y0,x1,y1] = targetAnchor;
+  return `<g id="inset-${esc(mapId)}"><clipPath id="${id}" clipPathUnits="userSpaceOnUse"><rect x="${x0}" y="${y0}" width="${x1-x0}" height="${y1-y0}"/></clipPath><g clip-path="url(#${id})">${fullOverlay(mapId, sourceAnchor, targetAnchor)}</g></g>`;
+}
 
 const panelTransforms = {};
 for (const p of reg.panels) {
@@ -72,11 +77,14 @@ if (concourse) {
   secondFloor.push(`<g id="official-2f-concourse"><rect x="${frame[0]-3}" y="${frame[1]-3}" width="${frame[2]-frame[0]+6}" height="${frame[3]-frame[1]+6}" rx="3" fill="#fff9d9" fill-opacity=".92" stroke="#b88916" stroke-width="1.2"/><text x="${frame[0]+5}" y="${frame[1]-7}" font-family="Arial,sans-serif" font-size="7" font-weight="700" fill="#765700">2F · CENTRAL MALL / 중앙 출입구</text>${fullOverlay('concourse', concourseSource, concourseTarget)}</g>`);
 }
 
+// Insets are enlarged/cropped views from inside the Hall 9 diagram. The whole
+// source SVG must NOT spill outside its assigned rectangle, otherwise the
+// indie/Selected 80 map paints over the neighboring Hall 9–11 drawing.
 for (const p of reg.insets) {
   const parent = panelTransforms[p.parent];
   if (!parent) throw new Error(`missing parent transform ${p.parent}`);
   const targetInParent = rect(parent, p.to);
-  firstFloor.push(fullOverlay(p.map, p.from, targetInParent));
+  firstFloor.push(clippedOverlay(p.map, p.from, targetInParent));
 }
 
 const group = `<g id="official-tgs-overlay" pointer-events="none"><g id="official-1f-overlay">${firstFloor.join('')}</g><g id="official-2f-overlay" display="none">${secondFloor.join('')}</g></g><!-- /official-tgs-overlay -->`;
@@ -84,4 +92,4 @@ const close = campus.lastIndexOf('</svg>');
 if (close === -1) throw new Error('invalid campus.svg');
 campus = campus.slice(0, close) + group + campus.slice(close);
 fs.writeFileSync(campusPath, campus);
-console.log(`composed switchable official TGS floor layers (1F ${firstFloor.length}, 2F ${secondFloor.length})`);
+console.log(`composed switchable official TGS floor layers with clipped insets (1F ${firstFloor.length}, 2F ${secondFloor.length})`);
