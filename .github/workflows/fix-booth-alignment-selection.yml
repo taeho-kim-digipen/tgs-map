@@ -30,10 +30,13 @@ jobs:
         run: python scripts/build-campus.py
       - name: Re-compose official floor artwork
         run: node scripts/compose-campus-official.cjs
-      - name: Validate JavaScript and tests
+      - name: Validate generated site
         run: |
           node --check dist/app.js
-          npm test
+          node tests/check-server.cjs
+          node tests/check-travel.cjs
+          node tests/check-navigation.cjs
+          node tests/check-content.cjs
       - name: Commit corrected map
         run: |
           git config user.name 'github-actions[bot]'
