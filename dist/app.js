@@ -6,8 +6,14 @@
   const STORAGE_KEY = 'tgs2026-interest-booths-v1';
   const DAY_PLAN_KEY = 'tgs2026-interest-days-v1';
   const DAY_FILTER_KEY = 'tgs2026-interest-day-filter-v1';
+  const DAY_PLAN_MIGRATION_KEY = 'tgs2026-interest-day-auto-plan-20260919-v1';
   const EVENT_DAYS = ['19','20','21'];
   const DAY_LABELS = {19:'19 토',20:'20 일',21:'21 월'};
+  const DEFAULT_DAY_PLAN = {
+    19:['07-C03','07-S01','06-S01','06-N04','06-C01'],
+    20:['05-N01','05-S01','04-C04','04-N01','03-N07','03-N04','03-C01','03-C06'],
+    21:['07-C04','08-N06','08-N07','09-E104','09-E66']
+  };
   let contentItems=[], data, activeMap, activeView, byId, favorites = new Set(), storageOkay = true;
   let dayPlans={19:new Set(),20:new Set(),21:new Set()}, favoriteDayFilter='all';
   let visitBooths=[], lastSvgViewport='';
@@ -666,6 +672,17 @@
       catch{favorites=new Set(data.defaults.filter(id=>byId.has(id)));storageOkay=false;$('storage-status').textContent='현재 창에서만 유지';}
       try{if(localStorage.getItem(PLAN_MIGRATION_KEY)!=='1'){for(const id of data.defaults)if(byId.has(id))favorites.add(id);save();localStorage.setItem(PLAN_MIGRATION_KEY,'1');}}catch{}
       loadDayPlans();
+      try{
+        if(localStorage.getItem(DAY_PLAN_MIGRATION_KEY)!=='1'){
+          let changed=false;
+          for(const day of EVENT_DAYS)for(const id of DEFAULT_DAY_PLAN[day]||[]){
+            if(!favorites.has(id)||!byId.has(id)||daysFor(id).length)continue;
+            dayPlans[day].add(id);changed=true;
+          }
+          if(changed)saveDayPlans();
+          localStorage.setItem(DAY_PLAN_MIGRATION_KEY,'1');
+        }
+      }catch{}
       for(const button of $('favorite-day-filter').children)button.addEventListener('click',()=>setFavoriteDayFilter(button.dataset.day));
       for(const v of data.views){const b=document.createElement('button');b.textContent=v.label;b.dataset.view=v.id;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectView(v.id));$('hall-nav').append(b);}
       for(const [id,category] of Object.entries(categories)){const button=document.createElement('button');button.style.setProperty('--facility-color',category.color);button.append(facilityIcon(id));const label=document.createElement('span');label.textContent=category.label;button.append(label);button.setAttribute('aria-label',`${category.label} 위치 찾기`);button.addEventListener('click',()=>{const items=data.facilities.filter(f=>f.category===id);$('booth-search').blur();if(items.length===1)focusFacility(items[0].id);else openResults(items,category.label);});$('facility-nav').append(button);}
