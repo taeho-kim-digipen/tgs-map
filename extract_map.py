@@ -193,7 +193,7 @@ for d in drawings:
     elif (520<x<675 or 1000<x<1118) and 295<y<330:label=f'센트럴몰 {"중앙" if x<675 else "서측"} {"여성" if female else "남성"} 화장실'
     else:continue
     add_facility('restroom-'+str(len(facilities)),'restroom',label,x,y,'공식 지도의 해당 성별 화장실 아이콘 위치입니다.')
-facilities.append(dict(id='redbull-gaming-sphere',category='event',name='Red Bull Gaming Sphere On Tour',map='halls911',floor='1F',x=164.1,y=.5,note='9홀 남측 야외 푸드코트 · 키친카 스페이스. 공식 도면 상단 가장자리 바로 바깥 야외 구역입니다.',source='TGS2026 / Red Bull: Hall 9 South Outdoor Food Court, kitchen-car space'))
+facilities.append(dict(id='redbull-gaming-sphere',category='event',name='Red Bull Gaming Sphere On Tour',map='halls911',floor='1F',x=164.1,y=.5,note='9홀 남측 야외 푸드코트·키친카 스페이스. 1F 야외 공간과 2F 프로그램 공간을 사용하며 지도 경로는 9홀 쪽 야외 출구까지 안내합니다.',source='Red Bull Japan / Red Bull Gaming JP / TGS2026'))
 for category,count in [('entrance',4),('locker',5),('food',3),('info',1),('charge',1)]:assert sum(f['category']==category for f in facilities)==count
 data=dict(
  source='https://service.tgs.cesa.or.jp/2026/venue_pdf_en/',
