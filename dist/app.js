@@ -14,6 +14,39 @@
     20:['05-N01','05-S01','04-C04','04-N01','03-N07','03-N04','03-C01','03-C06'],
     21:['07-C04','08-N06','08-N07','09-E104','09-E66']
   };
+  const GOODS_SPOTS = [
+    {key:'razer',name:'Razer',group:'1-3',location:'1홀 · Creator Lounge',kind:'키링',detail:'키보드 스위치 키링. 발광 타입이며 받침대가 고급스러운 구성이라는 현장 후기.',map:'main',x:824,y:79,caution:'크리에이터 라운지 내 협찬 전시 · 이용 자격/배포 조건 현장 확인'},
+    {key:'redbull-sampling',name:'Red Bull Sampling Station',group:'1-3',location:'1홀 · Event Stage 옆',kind:'배포',detail:'레드불 샘플링 스테이션. 현장 후기상 여러 캔을 받을 수 있었다는 제보.',map:'main',x:892,y:79},
+    {key:'crowxis',name:'Crowxis / CFD Sales',group:'1-3',booth:'01-C13',kind:'스탬프',detail:'AORUS와 연계 스탬프 랠리. 홀 6 AORUS도 방문해야 하는 방식.'},
+    {key:'benq',name:'BenQ Japan',group:'1-3',booth:'02-C07',kind:'전시',detail:'Halo 2 및 최신 모니터 전시 추천.'},
+    {key:'gamesir',name:'GameSir',group:'1-3',booth:'02-C17',kind:'배포',detail:'컨트롤러 핀 배지 배포 현장 후기.'},
+    {key:'galleria',name:'GALLERIA',group:'1-3',booth:'02-C21',kind:'전시',detail:'VSPO! 등 콜라보 PC의 사이드 패널 전시.'},
+    {key:'pulsar',name:'Pulsar Gaming Gears',group:'1-3',booth:'02-C20',kind:'챌린지',detail:'10초 챌린지 참가 상품으로 키보드 스위치 키링. Meiy 마우스패드 전시도 확인 가능.'},
+    {key:'corsair-elgato',name:'CORSAIR · Elgato',group:'1-3',booth:'03-C02',kind:'추첨',detail:'Elgato 관련 포스트/SNS 참여 추첨이 있다는 현장 후기.'},
+    {key:'topre',name:'Topre',group:'1-3',booth:'02-N09',kind:'전시',detail:'콜라보 모델 전시.'},
+
+    {key:'minecraft',name:'Minecraft',group:'4-6',booth:'04-C03',kind:'체험',detail:'거대한 크리퍼 테마 · Minecraft Dungeons 2 체험 플레이.'},
+    {key:'aorus',name:'AORUS',group:'4-6',booth:'06-C02',kind:'스탬프',detail:'Crowxis와 연계 스탬프 랠리. 홀 1 Crowxis도 방문해야 하는 방식.'},
+    {key:'rog',name:'ROG / ASUS JAPAN',group:'4-6',booth:'06-N03',kind:'이벤트',detail:'LINE 추가 후 가라폰(추첨 룰렛) 참여 현장 후기.'},
+
+    {key:'googleplay',name:'Google Play',group:'7-8',booth:'07-N08',kind:'특전',detail:'Google Play 플래티넘 랭크 이상이면 게임 플레이로 약 1000pt를 받을 수 있다는 현장 후기.'},
+    {key:'storm',name:'STORM',group:'7-8',booth:'08-C11',kind:'배포',detail:'부스 촬영 + X 게시 계열 이벤트. 현장 후기상 나노 다이아몬드 그리스 등의 특전.'},
+    {key:'kioxia',name:'KIOXIA',group:'7-8',booth:'08-C18',kind:'스탬프',detail:'G TUNE과 연계 스탬프 랠리. 두 부스가 가까운 편.'},
+    {key:'gtune',name:'G TUNE / NEXTGEAR',group:'7-8',booth:'08-N06',kind:'스탬프',detail:'PC 전시 다수. KIOXIA와 연계 스탬프 랠리.'},
+    {key:'sofmap',name:'Sofmap',group:'7-8',booth:'08-C16',kind:'체험',detail:'GravaStar 게이밍 디바이스 체험 추천.'},
+    {key:'msi',name:'MSI',group:'7-8',booth:'08-N18',kind:'전시',detail:'게이밍 PC 전시.'},
+    {key:'ktc',name:'KTC',group:'7-8',booth:'08-N14',kind:'전시',detail:'모니터 전시.'},
+
+    {key:'pixio',name:'Pixio',group:'9-11',booth:'09-W05',kind:'추천',detail:'9홀 식음료 공간 출구 근처 추천 스팟.'},
+    {key:'kibu',name:'KIBU',group:'9-11',booth:'10-E19',kind:'배포',detail:'도파갓키(ドパガッキ) 볼펜 배포 현장 후기.'},
+    {key:'fumo',name:'Fumo Shop × Arbiter Studio',group:'9-11',booth:'10-E20',kind:'전시',detail:'NIJISANJI EN 등 콜라보 모델 다수 전시.'},
+    {key:'flydigi',name:'Flydigi',group:'9-11',booth:'10-C09',kind:'전시',detail:'APEX 6 등 컨트롤러 전시.'},
+    {key:'rabbit0',name:'Rabbit0 / ATK Gear',group:'9-11',booth:'10-C10',kind:'전시',detail:'콜라보 모델 다수 전시.'},
+    {key:'keychron',name:'Keychron',group:'9-11',booth:'10-E22',kind:'키링',detail:'가챠 상품으로 키보드 스위치 키링을 받을 수 있다는 현장 후기.'},
+    {key:'xvx',name:'XVX Keyboard',group:'9-11',location:'11홀 · 11-E20',kind:'키링',detail:'세라믹 사양의 키보드 스위치 키링 현장 후기.',map:'halls911',x:120.5,y:638.5},
+    {key:'aula',name:'AULA',group:'9-11',booth:'11-E03',kind:'키링',detail:'직접 커스텀할 수 있는 키보드 스위치 키링 현장 후기.'}
+  ];
+  let favoritesPanelMode='interests',goodsGroupFilter='all';
   let contentItems=[], data, activeMap, activeView, byId, favorites = new Set(), storageOkay = true;
   let dayPlans={19:new Set(),20:new Set(),21:new Set()}, favoriteDayFilter='all';
   let visitBooths=[], lastSvgViewport='';
@@ -231,6 +264,47 @@
     panel.append(head,note,routeAction);panel.hidden=false;
   }
 
+  function setFavoritesPanelMode(mode){
+    favoritesPanelMode=mode==='goods'?'goods':'interests';
+    const interest=$('interest-panel'),goods=$('goods-panel');
+    if(interest)interest.hidden=favoritesPanelMode!=='interests';
+    if(goods)goods.hidden=favoritesPanelMode!=='goods';
+    const tabs=$('favorites-mode-tabs');
+    if(tabs)for(const button of tabs.children)button.setAttribute('aria-pressed',String(button.dataset.favoritesTab===favoritesPanelMode));
+    if(favoritesPanelMode==='goods')renderGoodsSpots();
+  }
+  function focusGoodsSpot(spot){
+    if(spot.booth&&byId.has(spot.booth)){focusBooth(spot.booth);announce(`${spot.name} · 지도 바로가기`);return;}
+    const m=data.maps.find(item=>item.id===spot.map);if(!m||!Number.isFinite(spot.x)||!Number.isFinite(spot.y))return;
+    closeResults(false);closeDetail();if(!activeMap||activeMap.id!==m.id)setMap(m.id);
+    activeView=null;for(const el of $('hall-nav').children)el.setAttribute('aria-pressed','false');
+    const pad=m.id==='main'?48:28;fitBounds([spot.x-pad,spot.y-pad*.7,spot.x+pad,spot.y+pad*.7],55);
+    announce(`${spot.name} · ${spot.location||'위치'}`);
+  }
+  function renderGoodsSpots(){
+    const list=$('goods-list');if(!list||!byId)return;list.replaceChildren();
+    const spots=GOODS_SPOTS.filter(spot=>goodsGroupFilter==='all'||spot.group===goodsGroupFilter);
+    $('goods-count').textContent=String(GOODS_SPOTS.length);
+    $('goods-visible-count').textContent=String(spots.length);
+    for(const spot of spots){
+      const card=document.createElement('button');card.type='button';card.className='goods-card';card.setAttribute('aria-label',`${spot.name} 지도 바로가기`);
+      const top=document.createElement('span');top.className='goods-card-top';
+      const kind=document.createElement('b');kind.className='goods-kind';kind.textContent=spot.kind;
+      const loc=document.createElement('small');
+      const booth=spot.booth&&byId.get(spot.booth);loc.textContent=spot.location||(booth?`${locationOf(booth)} · ${booth.code}`:'위치 확인');
+      top.append(kind,loc);
+      const title=document.createElement('strong');title.textContent=spot.name;
+      const detail=document.createElement('span');detail.className='goods-detail';detail.textContent=spot.detail;
+      card.append(top,title,detail);
+      if(spot.caution){const caution=document.createElement('em');caution.textContent=spot.caution;card.append(caution);}
+      card.addEventListener('click',()=>focusGoodsSpot(spot));list.append(card);
+    }
+  }
+  function setGoodsGroupFilter(group){
+    goodsGroupFilter=['all','1-3','4-6','7-8','9-11'].includes(group)?group:'all';
+    const tabs=$('goods-group-tabs');if(tabs)for(const button of tabs.children)button.setAttribute('aria-pressed',String(button.dataset.goodsGroup===goodsGroupFilter));
+    renderGoodsSpots();requestAnimationFrame(()=>{const list=$('goods-list');if(list)list.scrollLeft=0;});
+  }
   function save() {
     try { localStorage.setItem(STORAGE_KEY,JSON.stringify([...favorites])); }
     catch { storageOkay=false; $('storage-status').textContent='저장 실패 · 현재 창에서만 유지'; }
@@ -593,6 +667,8 @@
   for(const kind of ['demo','ticket','sale','unknown'])$('legend-'+kind).append(visitIcon(kind));
   $('favorites-prev').addEventListener('click',()=>{favoritePage--;renderFavorites();});
   $('favorites-next').addEventListener('click',()=>{favoritePage++;renderFavorites();});
+  for(const button of $('favorites-mode-tabs').children)button.addEventListener('click',()=>setFavoritesPanelMode(button.dataset.favoritesTab));
+  for(const button of $('goods-group-tabs').children)button.addEventListener('click',()=>setGoodsGroupFilter(button.dataset.goodsGroup));
   $('display-mode').value=modePreference;
   $('display-mode').addEventListener('change',()=>{modePreference=$('display-mode').value;try{localStorage.setItem('tgs2026-screen-mode',modePreference);}catch{}syncScreen();});
   $('booth-search').addEventListener('input',search);
@@ -693,7 +769,7 @@
         vectorMaps.set(m.id,parsed.documentElement);
       };
       await loadVectorMap(campus);
-      renderFavorites();selectView('campus');$('load-status').hidden=true;registerTools();
+      renderFavorites();renderGoodsSpots();selectView('campus');$('load-status').hidden=true;registerTools();
       const defer=window.requestIdleCallback?cb=>window.requestIdleCallback(cb,{timeout:2200}):cb=>setTimeout(cb,450);
       defer(()=>{Promise.all(data.maps.filter(m=>m.id!=='campus').map(loadVectorMap)).catch(()=>{});});
       try{
