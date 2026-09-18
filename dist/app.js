@@ -29,6 +29,7 @@
     food:{label:'식사',color:'#bb620d',path:'M5 2v7m3-7v7M3 6h7v3a3.5 3.5 0 0 1-7 0M6.5 12v10M18 2v20m0-20c-6 2-6 10 0 10'},
     charge:{label:'배터리',color:'#148a60',path:'M8 3h8v3H8zM6 6h12v16H6zM13 9l-4 5h4l-2 5 5-6h-4z'},
     info:{label:'안내소',color:'#16738e',path:'M12 10v9m-3 0h6M12 5v1'},
+    event:{label:'이벤트',color:'#1f63c6',path:'M12 2l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2-4.5-4.4 6.2-.9L12 2z'},
     restroom:{label:'화장실',color:'#516883',path:'M8 5a2 2 0 1 0-4 0 2 2 0 0 0 4 0M3 10h6v6H3zM5 16v6m3-6v6M19 5a2 2 0 1 0-4 0 2 2 0 0 0 4 0M17 10l-4 8h8zM16 18v4m3-4v4'}
   };
   let resultItems=[],resultPage=0,resultHeading='',resultsOpen=false;
@@ -567,7 +568,7 @@
 
   async function init(){
     try{
-      const response=await fetch('./map-data.json?v=5');if(!response.ok)throw new Error('data');data=await response.json();
+      const response=await fetch('./map-data.json?v=6');if(!response.ok)throw new Error('data');data=await response.json();
       const contentResponse=await fetch('./data.json');if(!contentResponse.ok)throw Error('content');
       contentItems=await contentResponse.json();if(!Array.isArray(contentItems))throw Error('content');
       data.details=data.details||{};data.details.booths={};
