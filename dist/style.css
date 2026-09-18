@@ -26,3 +26,16 @@
 
 /* mobile-runtime-opt-v1 */
 #world,#facility-markers,#labels,#visit-markers{contain:layout paint style}.facility-markers,.labels,.visit-markers{transform:translateZ(0)}#map{will-change:contents}
+
+/* favorite-day-planner-v1 */
+.favorite-day-filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:-3px 0 8px}
+.favorite-day-filter button{min-width:0;border:1px solid #d4ddd5;border-radius:6px;background:#fff;color:#486158;padding:5px 3px;font:inherit;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap}
+.favorite-day-filter button[aria-pressed="true"]{background:#263e37;border-color:#263e37;color:#fff}
+.favorite-day-filter button span{display:inline-block;min-width:16px;margin-left:2px;padding:1px 4px;border-radius:999px;background:#e7ece7;color:#40564e;font-size:10px}
+.favorite-day-filter button[aria-pressed="true"] span{background:#ffffff2c;color:#fff}
+.booth-day-picker{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));align-items:center;gap:6px;margin-top:9px;padding:9px;border:1px solid #d6dfd7;border-radius:8px;background:#f7faf6}
+.booth-day-picker>strong{font-size:13px;color:#385047;padding-right:2px}
+.booth-day-picker button{min-height:36px;border:1px solid #cbd6cd;border-radius:6px;background:#fff;color:#405a50;font-weight:750}
+.booth-day-picker button[aria-pressed="true"]{background:#263e37;border-color:#263e37;color:#fff}
+.booth-day-picker small{grid-column:1/-1;color:#6b7d74;font-size:11px;line-height:1.35}
+@media(max-height:520px) and (orientation:landscape){.favorite-day-filter{margin-bottom:4px}.favorite-day-filter button{padding:3px 2px;font-size:11px}.booth-day-picker{padding:6px;margin-top:6px}.booth-day-picker small{display:none}}
