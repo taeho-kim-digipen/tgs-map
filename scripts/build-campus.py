@@ -66,6 +66,9 @@ stair=[(x+OX,y+OY)for x,y in REG['hall10Stairs']];walk.append(LineString(stair).
 # Enlarged panels are placed within their parent footprint; originals remain available.
 for p in REG['insets']:
  if p['map']=='selected80':walk.append(box(*rect(transforms[p['map']],p['from'])))
+# Red Bull Gaming Sphere On Tour is in the Hall 9 south outdoor food-court / kitchen-car space.
+# Keep a narrow, connected outdoor spur instead of opening the whole exterior plaza to routing.
+walk.append(box(426.0,364.0,439.5,371.5))
 placements={}
 colors={'main':'#cadfeb','school':'#eed2e3','indie9':'#cbdfe5','business9':'#cce7da','selected80':'#acdce9','halls911':'#eedfc9'}
 booth_shapes=[];booth_text=[]
@@ -100,6 +103,7 @@ for geom in walk:svg.append(f'<path d="{path(list(geom.exterior.coords),True)}" 
 # Booth hitboxes/placements are emitted to campus.json and app.js. The visible booth artwork comes from the official PDF overlay, so do not duplicate hundreds of synthetic SVG booth nodes here.
 labels=[(OX-290,OY-216,'HALL 7–8'),(OX-126,OY-216,'HALL 4–6'),(OX+75,OY-216,'HALL 1–3'),(OX+48,OY+180,'HALL 9'),(OX+48,OY+258,'HALL 10'),(OX+48,OY+300,'HALL 11'),(OX-86,OY+55,'2F 연결교'),(OX-260,OY+1,'국제회의장'),(OX-52,OY-6,'이벤트홀')]
 for x,y,label in labels:svg.append(f'<text x="{x}" y="{y}" font-family="Arial,sans-serif" font-size="7" font-weight="700" text-anchor="middle" fill="#3d5e52">{label}</text>')
+svg.append('<g id="redbull-outdoor-callout" pointer-events="none"><path d="M432.7 366.2V361.4" fill="none" stroke="#d71920" stroke-width="1.5" stroke-linecap="round"/><circle cx="432.7" cy="366.2" r="3" fill="#d71920" stroke="#fff" stroke-width="1.1"/><rect x="401.5" y="344.5" width="62.4" height="17" rx="3.2" fill="#fff" fill-opacity=".97" stroke="#d71920" stroke-width="1.1"/><text x="432.7" y="351.3" font-family="Arial,sans-serif" font-size="5.6" font-weight="800" text-anchor="middle" fill="#b51219">RED BULL GAMING SPHERE</text><text x="432.7" y="357.8" font-family="Arial,sans-serif" font-size="5.1" font-weight="700" text-anchor="middle" fill="#263d40">9홀 남측 야외 푸드코트 · 키친카</text></g>')
 for p in stairs:svg.append(f'<g transform="translate({p["x"]} {p["y"]})"><rect x="-3" y="-3" width="6" height="6" rx="1" fill="#34675d"/><path d="M-2 2H-.6V.6H.7V-.7H2V-2" fill="none" stroke="white" stroke-width=".8"/></g>')
 svg.append('</svg>');(ROOT/'dist/campus.svg').write_text(''.join(svg))
 geo={'origin':{'latitude':G['latitude'],'longitude':G['longitude']},'x':OX,'y':OY,'a':ux,'b':-uy,'unitsPerMeter':1,'northAngle':math.degrees(math.atan2(-uy,ux))%360}
