@@ -668,8 +668,8 @@
       byId=new Map(data.booths.map(b=>[b.id,b]));
       for(const b of data.booths)b.searchText=normal(`${b.name} ${b.shortName||''} ${b.officialName} ${b.code} ${boothAliases[b.id]||''} ${(b.exhibitors||[]).join(' ')} ${(visitOf(b).activities||[]).join(' ')} ${visitOf(b).goods||''} ${b.locationLabel||''}`);
       try{const raw=localStorage.getItem(STORAGE_KEY);if(raw!==null){const list=JSON.parse(raw);if(!Array.isArray(list))throw new Error('storage');favorites=new Set(list.filter(id=>byId.has(id)));}else{favorites=new Set(data.defaults.filter(id=>byId.has(id)));save();}}
-      try{if(localStorage.getItem(INTEREST_MIGRATION_KEY)!=='1'){let changed=false;for(const id of ['06-C01','03-C06'])if(byId.has(id)&&!favorites.has(id)){favorites.add(id);changed=true;}if(changed)save();localStorage.setItem(INTEREST_MIGRATION_KEY,'1');}}catch{}
       catch{favorites=new Set(data.defaults.filter(id=>byId.has(id)));storageOkay=false;$('storage-status').textContent='현재 창에서만 유지';}
+      try{if(localStorage.getItem(INTEREST_MIGRATION_KEY)!=='1'){let changed=false;for(const id of ['06-C01','03-C06'])if(byId.has(id)&&!favorites.has(id)){favorites.add(id);changed=true;}if(changed)save();localStorage.setItem(INTEREST_MIGRATION_KEY,'1');}}catch{}
       try{if(localStorage.getItem(PLAN_MIGRATION_KEY)!=='1'){for(const id of data.defaults)if(byId.has(id))favorites.add(id);save();localStorage.setItem(PLAN_MIGRATION_KEY,'1');}}catch{}
       loadDayPlans();
       try{
