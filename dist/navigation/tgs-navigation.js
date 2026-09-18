@@ -78,7 +78,7 @@ function create(config){
     $('nav-more').open=false;
   }
   function describeFacility(f){
-    const labels={entrance:'입구',locker:'보관함',food:'식사',charge:'배터리',info:'안내소',restroom:'화장실'};
+    const labels={entrance:'입구',locker:'보관함',food:'식사',charge:'배터리',info:'안내소',restroom:'화장실',event:'이벤트'};
     $('nav-code').textContent=(f.floor||'')+' · '+(labels[f.category]||f.category);$('nav-name').textContent=f.name;
     $('nav-exhibits').textContent=f.note||'편의시설 위치';$('nav-sources').replaceChildren();
     if(/^https:\/\//.test(data.source||'')){const a=document.createElement('a');a.href=data.source;a.target='_blank';a.rel='noopener';a.textContent='TGS 공식 배치도 ↗';$('nav-sources').append(a);}
