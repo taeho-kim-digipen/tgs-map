@@ -39,3 +39,23 @@
 .booth-day-picker button[aria-pressed="true"]{background:#263e37;border-color:#263e37;color:#fff}
 .booth-day-picker small{grid-column:1/-1;color:#6b7d74;font-size:11px;line-height:1.35}
 @media(max-height:520px) and (orientation:landscape){.favorite-day-filter{margin-bottom:4px}.favorite-day-filter button{padding:3px 2px;font-size:11px}.booth-day-picker{padding:6px;margin-top:6px}.booth-day-picker small{display:none}}
+
+/* favorite-horizontal-scroll-v1 */
+.favorite-list{
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+  scroll-snap-type:x proximity;
+  padding-bottom:3px;
+}
+.favorite-list::-webkit-scrollbar{display:none}
+.favorite-chip{
+  flex:0 0 calc((100% - 14px)/3);
+  scroll-snap-align:start;
+}
+@media(min-width:760px){
+  .favorite-chip{flex-basis:220px}
+}
