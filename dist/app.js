@@ -15,6 +15,7 @@
   const vectorMaps=new Map();
   let modePreference='auto';
   const PLAN_MIGRATION_KEY='tgs2026-planned-booths-v2';
+  const INTEREST_MIGRATION_KEY='tgs2026-interest-add-20260918-bushiroad-razbam';
   const FLOOR_UI_VERSION='v3';
   let campusViewBounds=new Map();
   let floorRegions={first:[],second:[]};
@@ -119,6 +120,7 @@
   const normal = text=>String(text||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
   const boothAliases={
     '05-N01':'반다이 남코 반남 건담 로그오빗 로그오빗 로그오밋 에이스컴뱃 rogue orbit ace combat',
+    '06-C01':'부시로드 bushiroad', '03-C06':'라잠 razbam vrgineers f15 f-15 f35 f-35 시뮬레이터',
     '07-C03':'NC 엔씨 엔씨소프트 아스트라 Astra', '07-C04':'넥슨 nexon 마비노기 파레이돌리아 project rx',
     '07-S01':'캡콤 바이오하자드 슈팅레인지', '04-C04':'애니플렉스 아니플렉스',
     '04-N01':'세가 아틀러스 아틀라스', '03-S01':'스퀘어에닉스 스퀘어 에닉스',
@@ -565,7 +567,7 @@
 
   async function init(){
     try{
-      const response=await fetch('./map-data.json?v=4');if(!response.ok)throw new Error('data');data=await response.json();
+      const response=await fetch('./map-data.json?v=5');if(!response.ok)throw new Error('data');data=await response.json();
       const contentResponse=await fetch('./data.json');if(!contentResponse.ok)throw Error('content');
       contentItems=await contentResponse.json();if(!Array.isArray(contentItems))throw Error('content');
       data.details=data.details||{};data.details.booths={};
@@ -602,6 +604,7 @@
       byId=new Map(data.booths.map(b=>[b.id,b]));
       for(const b of data.booths)b.searchText=normal(`${b.name} ${b.shortName||''} ${b.officialName} ${b.code} ${boothAliases[b.id]||''} ${(b.exhibitors||[]).join(' ')} ${(visitOf(b).activities||[]).join(' ')} ${visitOf(b).goods||''} ${b.locationLabel||''}`);
       try{const raw=localStorage.getItem(STORAGE_KEY);if(raw!==null){const list=JSON.parse(raw);if(!Array.isArray(list))throw new Error('storage');favorites=new Set(list.filter(id=>byId.has(id)));}else{favorites=new Set(data.defaults.filter(id=>byId.has(id)));save();}}
+      try{if(localStorage.getItem(INTEREST_MIGRATION_KEY)!=='1'){let changed=false;for(const id of ['06-C01','03-C06'])if(byId.has(id)&&!favorites.has(id)){favorites.add(id);changed=true;}if(changed)save();localStorage.setItem(INTEREST_MIGRATION_KEY,'1');}}catch{}
       catch{favorites=new Set(data.defaults.filter(id=>byId.has(id)));storageOkay=false;$('storage-status').textContent='현재 창에서만 유지';}
       try{if(localStorage.getItem(PLAN_MIGRATION_KEY)!=='1'){for(const id of data.defaults)if(byId.has(id))favorites.add(id);save();localStorage.setItem(PLAN_MIGRATION_KEY,'1');}}catch{}
       for(const v of data.views){const b=document.createElement('button');b.textContent=v.label;b.dataset.view=v.id;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectView(v.id));$('hall-nav').append(b);}
