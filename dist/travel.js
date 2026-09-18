@@ -1,13 +1,21 @@
 'use strict';
 (() => {
   const KEY = 'tgs2026-interest-booths-v1';
+  const DAY_KEY = 'tgs2026-interest-days-v1';
+  const EVENT_DAYS = ['19','20','21'];
   function validateBackup(value, validIds) {
-    if (!value || value.format !== 'tgs2026-interests' || value.version !== 1 || !Array.isArray(value.boothIds)) throw new Error('이 지도에서 만든 관심 목록 백업 파일을 선택해 주세요.');
+    if (!value || value.format !== 'tgs2026-interests' || ![1,2].includes(value.version) || !Array.isArray(value.boothIds)) throw new Error('이 지도에서 만든 관심 목록 백업 파일을 선택해 주세요.');
     if (value.boothIds.length > validIds.size || value.boothIds.some(id => typeof id !== 'string' || !validIds.has(id))) throw new Error('확인할 수 없는 부스 번호가 들어 있습니다.');
     return [...new Set(value.boothIds)];
   }
-  function makeBackup(ids) { return {format:'tgs2026-interests', version:1, boothIds:[...new Set(ids)]}; }
-  if (typeof module !== 'undefined' && module.exports) { module.exports = {validateBackup, makeBackup}; return; }
+  function validateDayPlans(value, validIds, boothIds) {
+    const plans={19:[],20:[],21:[]};if(value?.version!==2)return plans;
+    const allowed=new Set(boothIds);
+    for(const day of EVENT_DAYS){const list=value.dayPlans?.[day]??[];if(!Array.isArray(list)||list.some(id=>typeof id!=='string'||!validIds.has(id)||!allowed.has(id)))throw new Error('방문일 정보에 확인할 수 없는 부스가 들어 있습니다.');plans[day]=[...new Set(list)];}
+    return plans;
+  }
+  function makeBackup(ids, dayPlans={}) { const boothIds=[...new Set(ids)];const allowed=new Set(boothIds);return {format:'tgs2026-interests', version:2, boothIds, dayPlans:Object.fromEntries(EVENT_DAYS.map(day=>[day,[...new Set(Array.isArray(dayPlans?.[day])?dayPlans[day]:[])].filter(id=>allowed.has(id))]))}; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = {validateBackup, validateDayPlans, makeBackup}; return; }
   const $ = id => document.getElementById(id);
   const status = $('offline-status'), saveButton = $('offline-save');
   const isDevelopment = !!document.querySelector('script[data-tgs-dev-version]');
@@ -100,13 +108,14 @@
       const raw = localStorage.getItem(KEY);
       const ids = raw === null ? data.defaults : JSON.parse(raw);
       if (!Array.isArray(ids)) throw new Error('현재 관심 목록을 읽지 못했습니다.');
-      const backup = makeBackup(ids.filter(id => validIds.has(id)));
+      let plans={};try{plans=JSON.parse(localStorage.getItem(DAY_KEY)||'{}');}catch{}
+      const backup = makeBackup(ids.filter(id => validIds.has(id)),plans);
       const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'}));
       const link = document.createElement('a');
       link.href = url; link.download = 'TGS-2026-interest-booths.json';
       document.body.append(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      transferStatus(`관심 부스 ${backup.boothIds.length}개 백업을 준비했습니다. 파일 앱에 저장해 주세요.`);
+      transferStatus(`관심 부스 ${backup.boothIds.length}개와 방문일 계획을 백업했습니다. 파일 앱에 저장해 주세요.`);
     } catch (error) { transferStatus(error.message || '백업을 만들지 못했습니다.'); }
   });
   $('interest-import').addEventListener('click', () => $('interest-file').click());
@@ -116,9 +125,9 @@
     try {
       if (file.size > 65536) throw new Error('관심 목록 백업 파일이 아닙니다.');
       const data = await getData();
-      const ids = validateBackup(JSON.parse(await file.text()), new Set(data.booths.map(booth => booth.id)));
-      if (!window.confirm(`현재 관심 목록을 백업의 ${ids.length}개 부스로 바꿀까요?`)) return;
-      localStorage.setItem(KEY, JSON.stringify(ids));
+      const value=JSON.parse(await file.text()),validIds=new Set(data.booths.map(booth => booth.id)),ids=validateBackup(value,validIds),plans=validateDayPlans(value,validIds,ids);
+      if (!window.confirm(`현재 관심 목록을 백업의 ${ids.length}개 부스와 방문일 계획으로 바꿀까요?`)) return;
+      localStorage.setItem(KEY, JSON.stringify(ids));localStorage.setItem(DAY_KEY,JSON.stringify(plans));
       location.reload();
     } catch (error) { transferStatus(error instanceof SyntaxError ? '백업 파일을 읽을 수 없습니다.' : error.message || '관심 목록을 불러오지 못했습니다.'); }
     finally { event.target.value = ''; }
