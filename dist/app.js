@@ -4,7 +4,12 @@
   const viewport = $('viewport'), svg = $('map');
   const NS = 'http://www.w3.org/2000/svg';
   const STORAGE_KEY = 'tgs2026-interest-booths-v1';
+  const DAY_PLAN_KEY = 'tgs2026-interest-days-v1';
+  const DAY_FILTER_KEY = 'tgs2026-interest-day-filter-v1';
+  const EVENT_DAYS = ['19','20','21'];
+  const DAY_LABELS = {19:'19 토',20:'20 일',21:'21 월'};
   let contentItems=[], data, activeMap, activeView, byId, favorites = new Set(), storageOkay = true;
+  let dayPlans={19:new Set(),20:new Set(),21:new Set()}, favoriteDayFilter='all';
   let visitBooths=[], lastSvgViewport='';
   let tx = 0, ty = 0, scale = 1, minScale = .1, maxScale = 20;
   let focused = null, toastTimer, frame = 0, holdTimer, gesture, lastTap, singleTapTimer;
@@ -224,6 +229,48 @@
     try { localStorage.setItem(STORAGE_KEY,JSON.stringify([...favorites])); }
     catch { storageOkay=false; $('storage-status').textContent='저장 실패 · 현재 창에서만 유지'; }
   }
+  function loadDayPlans(){
+    dayPlans={19:new Set(),20:new Set(),21:new Set()};
+    try{
+      const raw=localStorage.getItem(DAY_PLAN_KEY);
+      if(raw!==null){
+        const saved=JSON.parse(raw);
+        for(const day of EVENT_DAYS)if(Array.isArray(saved?.[day]))dayPlans[day]=new Set(saved[day].filter(id=>byId.has(id)&&favorites.has(id)));
+      }
+      const savedFilter=localStorage.getItem(DAY_FILTER_KEY);if(savedFilter==='all'||EVENT_DAYS.includes(savedFilter))favoriteDayFilter=savedFilter;
+    }catch{dayPlans={19:new Set(),20:new Set(),21:new Set()};favoriteDayFilter='all';}
+  }
+  function saveDayPlans(){
+    try{
+      localStorage.setItem(DAY_PLAN_KEY,JSON.stringify(Object.fromEntries(EVENT_DAYS.map(day=>[day,[...dayPlans[day]]]))));
+      localStorage.setItem(DAY_FILTER_KEY,favoriteDayFilter);
+    }catch{storageOkay=false;$('storage-status').textContent='저장 실패 · 현재 창에서만 유지';}
+  }
+  const daysFor=id=>EVENT_DAYS.filter(day=>dayPlans[day].has(id));
+  const favoriteVisible=id=>favorites.has(id)&&(favoriteDayFilter==='all'||dayPlans[favoriteDayFilter].has(id));
+  const visibleFavoriteIds=()=>[...favorites].filter(favoriteVisible);
+  function renderFavoriteDayFilter(){
+    const wrap=$('favorite-day-filter');if(!wrap)return;
+    const counts={all:favorites.size,...Object.fromEntries(EVENT_DAYS.map(day=>[day,[...dayPlans[day]].filter(id=>favorites.has(id)).length]))};
+    for(const button of wrap.querySelectorAll?.('button')||[]){
+      const day=button.dataset.day, count=button.querySelector?.('[data-day-count]');
+      if(count)count.textContent=String(counts[day]??0);
+      button.setAttribute('aria-pressed',String(day===favoriteDayFilter));
+    }
+  }
+  function setFavoriteDayFilter(day){
+    if(day!=='all'&&!EVENT_DAYS.includes(day))return;
+    favoriteDayFilter=day;favoritePage=0;saveDayPlans();renderFavorites();updateSelection();
+  }
+  function toggleBoothDay(id,day){
+    if(!byId.has(id)||!EVENT_DAYS.includes(day))return;
+    const add=!dayPlans[day].has(id);
+    if(add&&!favorites.has(id)){favorites.add(id);save();}
+    if(add)dayPlans[day].add(id);else dayPlans[day].delete(id);
+    saveDayPlans();renderFavorites();updateSelection();
+    if(focused===id){if($('detail').hidden)renderBoothPeek(id);else showDetail(id);}
+    announce(`${nameOf(byId.get(id))} · ${DAY_LABELS[day]} ${add?'추가':'해제'}`);
+  }
   function announce(message) {
     clearTimeout(toastTimer); $('toast').textContent=message; $('toast').classList.add('show');
     toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2200);
@@ -231,8 +278,8 @@
   function toggle(id, selected) {
     if (!byId.has(id)) throw new Error('알 수 없는 부스입니다.');
     const b=byId.get(id), add=typeof selected==='boolean'?selected:!favorites.has(id);
-    if (add) favorites.add(id); else favorites.delete(id);
-    save(); renderFavorites(); updateSelection();
+    if (add) favorites.add(id); else {favorites.delete(id);for(const day of EVENT_DAYS)dayPlans[day].delete(id);}
+    save(); saveDayPlans(); renderFavorites(); updateSelection();
     if(focused===id){if($('detail').hidden)renderBoothPeek(id);else showDetail(id);}
     announce(`${nameOf(b)} · ${add?'관심 등록':'관심 해제'}${storageOkay?'':' (저장 실패)'}`);
     return {id,selected:add};
@@ -246,7 +293,7 @@
       node.classList.toggle('visit-ticket-outline',enabled&&!hiddenFloor&&needsTicket(info));
       node.classList.toggle('visit-sale-outline',enabled&&!hiddenFloor&&info.sales==='yes'&&!needsTicket(info));
       node.classList.toggle('visit-muted',!hiddenFloor&&!matchesVisit(b));
-      node.classList.toggle('selected',!hiddenFloor&&favorites.has(id));
+      node.classList.toggle('selected',!hiddenFloor&&favoriteVisible(id));
       node.classList.toggle('focused',!hiddenFloor&&focused===id);
       node.classList.toggle('nav-destination',!hiddenFloor&&navigation?.targetId()===id);
       node.setAttribute('aria-pressed',String(!hiddenFloor&&favorites.has(id)));
@@ -256,23 +303,27 @@
   }
   function renderFavorites() {
     $('favorite-count').textContent=String(favorites.size);
+    renderFavoriteDayFilter();
     $('favorite-list').replaceChildren();
-    const pageSize=favoritesPerPage(),pages=Math.max(1,Math.ceil(favorites.size/pageSize));
+    const ids=visibleFavoriteIds(),pageSize=favoritesPerPage(),pages=Math.max(1,Math.ceil(ids.length/pageSize));
     favoritePage=clamp(favoritePage,0,pages-1);
     $('favorite-pages').hidden=pages===1;
     $('storage-status').hidden=pages>1;
     $('favorite-page').textContent=`${favoritePage+1} / ${pages}`;
     $('favorites-prev').disabled=favoritePage===0;
     $('favorites-next').disabled=favoritePage>=pages-1;
-    if (!favorites.size) {
-      const p=document.createElement('p');p.className='empty';p.textContent='관심 있는 부스를 지도에서 꾹 눌러보세요.';$('favorite-list').append(p);return;
+    if (!ids.length) {
+      const p=document.createElement('p');p.className='empty';
+      p.textContent=favoriteDayFilter==='all'?'관심 있는 부스를 지도에서 꾹 눌러보세요.':`${DAY_LABELS[favoriteDayFilter]}에 지정한 관심 부스가 없습니다.`;
+      $('favorite-list').append(p);return;
     }
-    for(const id of [...favorites].slice(favoritePage*pageSize,(favoritePage+1)*pageSize)){
+    for(const id of ids.slice(favoritePage*pageSize,(favoritePage+1)*pageSize)){
       const b=byId.get(id);if(!b)continue;
       const button=document.createElement('button');button.className='favorite-chip';button.setAttribute('aria-label',`${nameOf(b)}, ${b.code}, 위치 보기`);
       const star=document.createElement('span');star.className='chip-star';star.textContent='★';star.setAttribute('aria-hidden','true');
       const text=document.createElement('span'),title=document.createElement('strong'),meta=document.createElement('small');
-      title.textContent=nameOf(b);meta.textContent=`${locationOf(b)} · ${b.code}`;
+      const assigned=daysFor(id);title.textContent=nameOf(b);
+      meta.textContent=`${locationOf(b)} · ${b.code}${assigned.length?' · '+assigned.map(day=>DAY_LABELS[day].replace(' ','')).join('·'):' · 날짜 미지정'}`;
       text.append(title,meta);button.append(star,text);button.addEventListener('click',()=>focusBooth(id));
       $('favorite-list').append(button);
     }
@@ -283,7 +334,7 @@
     if(activeMap.id==='campus'&&floorMode==='2f')return;
     const tier=detailTier();if(activeMap.id==='campus'&&tier==='overview')return;
     const labels=[];
-    for(const id of favorites){
+    for(const id of visibleFavoriteIds()){
       const b=geometryOf(byId.get(id));if(!b)continue;
       const r=b.bounds,x=tx+(r[0]+r[2])/2*scale,y=ty+r[1]*scale;
       if(x<0||x>viewport.clientWidth||y<-15||y>viewport.clientHeight+30)continue;
@@ -420,7 +471,7 @@
     const b=byId.get(id);if(!b)return;const card=ensureBoothPeek();card.replaceChildren();
     const info=document.createElement('div');info.className='booth-peek-info';
     const title=document.createElement('strong');title.textContent=nameOf(b);
-    const meta=document.createElement('small');meta.textContent=`${locationOf(b)} · ${b.code}`;info.append(title,meta);
+    const meta=document.createElement('small'),assigned=daysFor(id);meta.textContent=`${locationOf(b)} · ${b.code}${assigned.length?' · '+assigned.map(day=>DAY_LABELS[day].replace(' ','')).join('·'):''}`;info.append(title,meta);
     const route=document.createElement('button');route.type='button';route.className='booth-peek-route';route.textContent='경로';route.setAttribute('aria-label',nameOf(b)+'까지 경로 안내');route.addEventListener('click',()=>navigation?.toggleBooth(id));
     const open=document.createElement('button');open.type='button';open.className='booth-peek-open';open.textContent='보기';open.setAttribute('aria-label',nameOf(b)+' 상세정보 보기');open.addEventListener('click',()=>showDetail(id));
     card.append(info,route,open);card.hidden=false;
@@ -455,7 +506,12 @@
     const links=document.createElement('div');links.className='visit-links';
     for(const item of visit.sources||[{label:'공식 배치도',url:data.source}]){if(!/^https:\/\//.test(item.url))continue;const a=document.createElement('a');a.href=item.url;a.target='_blank';a.rel='noopener';a.textContent=`${item.label} ↗`;links.append(a);}panel.append(links);
     const routeAction=document.createElement('button');routeAction.className='route-button';routeAction.textContent=navigation?'이 부스까지 경로 안내':'위치 안내 준비 중';routeAction.disabled=!navigation;routeAction.addEventListener('click',()=>navigation?.toggleBooth(id));panel.append(routeAction);
-    const action=document.createElement('button');action.className=`interest-button ${favorites.has(id)?'is-selected':''}`;action.textContent=favorites.has(id)?'★ 관심 부스 해제':'☆ 관심 부스로 등록';action.setAttribute('aria-pressed',String(favorites.has(id)));action.addEventListener('click',()=>toggle(id));panel.append(action);panel.hidden=false;updateSelection();
+    const action=document.createElement('button');action.className=`interest-button ${favorites.has(id)?'is-selected':''}`;action.textContent=favorites.has(id)?'★ 관심 부스 해제':'☆ 관심 부스로 등록';action.setAttribute('aria-pressed',String(favorites.has(id)));action.addEventListener('click',()=>toggle(id));panel.append(action);
+    const picker=document.createElement('div');picker.className='booth-day-picker';
+    const pickerLabel=document.createElement('strong');pickerLabel.textContent='방문일';picker.append(pickerLabel);
+    for(const day of EVENT_DAYS){const dayButton=document.createElement('button');dayButton.type='button';dayButton.textContent=DAY_LABELS[day];dayButton.dataset.day=day;dayButton.setAttribute('aria-pressed',String(dayPlans[day].has(id)));dayButton.addEventListener('click',()=>toggleBoothDay(id,day));picker.append(dayButton);}
+    const pickerHint=document.createElement('small');pickerHint.textContent='여러 날짜 선택 가능 · 날짜를 누르면 관심 부스로도 등록됩니다.';picker.append(pickerHint);panel.append(picker);
+    panel.hidden=false;updateSelection();
   }
   function closeDetail(){focused=null;$('detail').hidden=true;hideBoothPeek();updateSelection();}
   function cancelHold(){clearTimeout(holdTimer);holdTimer=null;$('press-indicator').classList.remove('active');}
@@ -568,7 +624,7 @@
 
   async function init(){
     try{
-      const response=await fetch('./map-data.json?v=7');if(!response.ok)throw new Error('data');data=await response.json();
+      const response=await fetch('./map-data.json?v=8');if(!response.ok)throw new Error('data');data=await response.json();
       const contentResponse=await fetch('./data.json');if(!contentResponse.ok)throw Error('content');
       contentItems=await contentResponse.json();if(!Array.isArray(contentItems))throw Error('content');
       data.details=data.details||{};data.details.booths={};
@@ -609,6 +665,8 @@
       try{if(localStorage.getItem(INTEREST_MIGRATION_KEY)!=='1'){let changed=false;for(const id of ['06-C01','03-C06'])if(byId.has(id)&&!favorites.has(id)){favorites.add(id);changed=true;}if(changed)save();localStorage.setItem(INTEREST_MIGRATION_KEY,'1');}}catch{}
       catch{favorites=new Set(data.defaults.filter(id=>byId.has(id)));storageOkay=false;$('storage-status').textContent='현재 창에서만 유지';}
       try{if(localStorage.getItem(PLAN_MIGRATION_KEY)!=='1'){for(const id of data.defaults)if(byId.has(id))favorites.add(id);save();localStorage.setItem(PLAN_MIGRATION_KEY,'1');}}catch{}
+      loadDayPlans();
+      for(const button of $('favorite-day-filter').querySelectorAll('button'))button.addEventListener('click',()=>setFavoriteDayFilter(button.dataset.day));
       for(const v of data.views){const b=document.createElement('button');b.textContent=v.label;b.dataset.view=v.id;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectView(v.id));$('hall-nav').append(b);}
       for(const [id,category] of Object.entries(categories)){const button=document.createElement('button');button.style.setProperty('--facility-color',category.color);button.append(facilityIcon(id));const label=document.createElement('span');label.textContent=category.label;button.append(label);button.setAttribute('aria-label',`${category.label} 위치 찾기`);button.addEventListener('click',()=>{const items=data.facilities.filter(f=>f.category===id);$('booth-search').blur();if(items.length===1)focusFacility(items[0].id);else openResults(items,category.label);});$('facility-nav').append(button);}
       const source=$('source-info'),p=document.createElement('p');p.textContent=`공식 영문 배치도 · 2026년 9월 공개본 · ${data.booths.length}개 부스 구역`;
