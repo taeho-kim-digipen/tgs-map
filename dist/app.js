@@ -568,7 +568,7 @@
 
   async function init(){
     try{
-      const response=await fetch('./map-data.json?v=6');if(!response.ok)throw new Error('data');data=await response.json();
+      const response=await fetch('./map-data.json?v=7');if(!response.ok)throw new Error('data');data=await response.json();
       const contentResponse=await fetch('./data.json');if(!contentResponse.ok)throw Error('content');
       contentItems=await contentResponse.json();if(!Array.isArray(contentItems))throw Error('content');
       data.details=data.details||{};data.details.booths={};
