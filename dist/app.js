@@ -18,7 +18,7 @@
     // X / 현장 후기에서 발견한 디바이스·배포 정보
     {key:'razer',name:'Razer',group:'1-3',location:'1홀 · Creator Lounge',kind:'키링',detail:'현장 X 후기: 발광 키보드 스위치 키링. 받침대 포함 형태. 크리에이터 라운지 협찬 공간이라 일반 관람객 수령 가능 여부는 현장 확인 필요.',source:'현장 X',map:'main',x:824,y:79,caution:'Creator Lounge 이용 자격이 있을 수 있음'},
     {key:'redbull-sampling',name:'Red Bull Sampling Station',group:'1-3',location:'1홀 · Event Stage 옆',kind:'무료',detail:'현장 X 추천글에서 레드불 샘플링을 많이 받을 수 있었다는 후기. 수량·일별 운영은 현장 상황에 따라 달라질 수 있음.',source:'현장 X',map:'main',x:892,y:79},
-    {key:'redbull-tumbler',name:'Red Bull Gaming Sphere',group:'9-11',facility:'redbull-gaming-sphere',kind:'무료',detail:'Red Bull Gaming 공식 X: Gaming Sphere On Tour 방문자 누구나 발광 텀블러 수령 가능. 레드불을 넣으면 빛나는 타입.',source:'공식 X',caution:'재고 소진 가능'},
+    {key:'redbull-tumbler',name:'Red Bull Gaming Sphere',group:'9-11',facility:'redbull-gaming-sphere',kind:'무료',detail:'Red Bull Gaming 공식 X: 방문자 누구나 발광 텀블러 수령 가능. 레드불을 넣으면 빛나는 타입. 9/18 현장 후기상 약 11:30 배포 종료 사례가 있어 오전 우선 방문 권장.',source:'공식 X',caution:'재고 소진 가능'},
     {key:'crowxis',name:'Crowxis / CFD Sales',group:'1-3',booth:'01-C13',kind:'스탬프',detail:'현장 X 추천글: AORUS와 연계 스탬프 랠리. 홀 6 AORUS까지 함께 방문해야 함.',source:'현장 X'},
     {key:'benq',name:'BenQ MOBIUZ',group:'1-3',booth:'02-C07',kind:'키링',detail:'일반 공개일 한정. 부스 체험을 X에 게시하면 오리지널 파우치, 4개 체험 구역을 모두 돌면 TGS2026 한정 키보드 키링. 각 수량 한정.',source:'공식'},
     {key:'gamesir',name:'GameSir',group:'1-3',booth:'02-C17',kind:'배포',detail:'현장 X 후기: 컨트롤러 핀 배지 배포. 정확한 일별 조건·잔여 수량은 현장 확인.',source:'현장 X'},
@@ -274,9 +274,17 @@
     const head=document.createElement('div');head.className='detail-head';const text=document.createElement('div'),code=document.createElement('div'),title=document.createElement('h2');
     code.className='booth-code';code.textContent=`${f.floor} / ${categories[f.category].label}`;title.textContent=f.name;text.append(code,title);
     const close=document.createElement('button');close.className='icon-button detail-close';close.textContent='✕';close.setAttribute('aria-label','시설 정보 닫기');close.addEventListener('click',closeDetail);head.append(text,close);
-    const note=document.createElement('p');note.textContent=f.note;
+    const note=document.createElement('p');note.textContent=f.note;panel.append(head,note);
+    for(const section of f.sections||[]){
+      const wrap=document.createElement('section');wrap.className='visit-section';const h=document.createElement('h3');h.textContent=section.title;wrap.append(h);
+      if(Array.isArray(section.items)){const list=document.createElement('ul');for(const value of section.items){const li=document.createElement('li');li.textContent=value;list.append(li);}wrap.append(list);}
+      else if(section.text){const p=document.createElement('p');p.textContent=section.text;wrap.append(p);}
+      panel.append(wrap);
+    }
+    if(f.checkedAt){const checked=document.createElement('p');checked.className='visit-source';checked.textContent='정보 확인: '+f.checkedAt;panel.append(checked);}
+    if(Array.isArray(f.links)&&f.links.length){const links=document.createElement('div');links.className='visit-links';for(const item of f.links){if(!/^https:\/\//.test(item.url))continue;const a=document.createElement('a');a.href=item.url;a.target='_blank';a.rel='noopener';a.textContent=item.label+' ↗';links.append(a);}panel.append(links);}
     const routeAction=document.createElement('button');routeAction.className='route-button';routeAction.textContent=navigation?'이 시설까지 찾아가기':'위치 안내 준비 중';routeAction.disabled=!navigation;routeAction.addEventListener('click',()=>navigation?.toggleFacility(id));
-    panel.append(head,note,routeAction);panel.hidden=false;
+    panel.append(routeAction);panel.hidden=false;
   }
 
   function setFavoritesPanelMode(mode){
