@@ -86,3 +86,5 @@
 #goods-panel[hidden],#interest-panel[hidden]{display:none!important}
 @media(min-width:760px){.goods-card{flex-basis:235px}}
 @media(max-height:520px) and (orientation:landscape){.favorites-mode-tabs{margin-bottom:4px}.favorites-mode-tabs button{min-height:28px}.goods-card{min-height:84px;padding:6px 8px}.goods-note{display:none}.goods-detail{font-size:10px}}
+
+.goods-evidence{align-self:flex-start;border:1px solid #d6dfd7;border-radius:999px;background:#f8faf7;color:#60746a;padding:2px 6px;font-size:9px;font-weight:750;line-height:1.2}
