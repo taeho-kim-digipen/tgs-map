@@ -207,6 +207,6 @@ data=dict(
   dict(id='school',label='1홀 학교',map='school',bounds=[0,0,258,182]),
   dict(id='concourse',label='2F 편의',map='concourse',bounds=[0,0,938,134]),
  ],
- defaults=['05-N01','07-C04','07-C03'],booths=booths,facilities=facilities)
+ defaults=['05-N01','07-C04','07-C03','06-C01','03-C06'],booths=booths,facilities=facilities)
 (ROOT/'dist/map-data.json').write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n')
 print(json.dumps(dict(booths=len(booths),by_hall={h:sum(b['hall']==h for b in booths) for h in range(1,9)},maps=[dict(id=m['id'],size=(ROOT/'dist'/m['image'][2:]).stat().st_size) for m in maps]),ensure_ascii=False))
