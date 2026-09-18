@@ -266,7 +266,7 @@
   }
   function setFavoriteDayFilter(day){
     if(day!=='all'&&!EVENT_DAYS.includes(day))return;
-    favoriteDayFilter=day;favoritePage=0;saveDayPlans();renderFavorites();updateSelection();
+    favoriteDayFilter=day;favoritePage=0;saveDayPlans();renderFavorites();updateSelection();requestAnimationFrame(()=>{const list=$('favorite-list');if(list)list.scrollLeft=0;});
   }
   function toggleBoothDay(id,day){
     if(!byId.has(id)||!EVENT_DAYS.includes(day))return;
@@ -311,19 +311,15 @@
     $('favorite-count').textContent=String(favorites.size);
     renderFavoriteDayFilter();
     $('favorite-list').replaceChildren();
-    const ids=visibleFavoriteIds(),pageSize=favoritesPerPage(),pages=Math.max(1,Math.ceil(ids.length/pageSize));
-    favoritePage=clamp(favoritePage,0,pages-1);
-    $('favorite-pages').hidden=pages===1;
-    $('storage-status').hidden=pages>1;
-    $('favorite-page').textContent=`${favoritePage+1} / ${pages}`;
-    $('favorites-prev').disabled=favoritePage===0;
-    $('favorites-next').disabled=favoritePage>=pages-1;
+    const ids=visibleFavoriteIds();
+    $('favorite-pages').hidden=true;
+    $('storage-status').hidden=false;
     if (!ids.length) {
       const p=document.createElement('p');p.className='empty';
       p.textContent=favoriteDayFilter==='all'?'관심 있는 부스를 지도에서 꾹 눌러보세요.':`${DAY_LABELS[favoriteDayFilter]}에 지정한 관심 부스가 없습니다.`;
       $('favorite-list').append(p);return;
     }
-    for(const id of ids.slice(favoritePage*pageSize,(favoritePage+1)*pageSize)){
+    for(const id of ids){
       const b=byId.get(id);if(!b)continue;
       const button=document.createElement('button');button.className='favorite-chip';button.setAttribute('aria-label',`${nameOf(b)}, ${b.code}, 위치 보기`);
       const star=document.createElement('span');star.className='chip-star';star.textContent='★';star.setAttribute('aria-hidden','true');
