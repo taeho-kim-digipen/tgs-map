@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#122124">
-  <meta name="tgs-travel-version" content="2026.09.19.6">
+  <meta name="tgs-travel-version" content="2026.09.19.7">
   <meta name="apple-mobile-web-app-title" content="TGS 지도">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -12,14 +12,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="TGS 2026 1–11홀 공식 지도. 부스를 길게 눌러 나만의 관심 부스를 표시하세요.">
   <title>TGS 2026 · 관심 부스 지도</title>
-  <link rel="stylesheet" href="./style.css?v=13">
+  <link rel="stylesheet" href="./style.css?v=14">
   <link rel="stylesheet" href="./travel.css">
   <link rel="stylesheet" href="./visit.css">
   <link rel="stylesheet" href="./navigation/navigation.css?v=7">
   <script src="./navigation/core.js" defer></script>
   <script src="./navigation/sensors.js?v=7" defer></script>
   <script src="./navigation/tgs-navigation.js?v=10" defer></script>
-  <script src="./app.js?v=20" defer></script>
+  <script src="./app.js?v=21" defer></script>
   <script src="./travel.js?v=2" defer></script>
 </head>
 <body>
@@ -59,11 +59,19 @@
       <div id="detail" class="detail" hidden></div>
       <section id="search-results" class="search-results" aria-label="검색 결과" hidden><div class="results-heading"><strong id="results-title"></strong><button id="close-results" aria-label="검색 결과 닫기">✕</button></div><div id="results-list"></div><div class="results-pages"><button id="results-prev" aria-label="이전 검색 결과">‹ 이전</button><span id="results-page" aria-live="polite"></span><button id="results-next" aria-label="다음 검색 결과">다음 ›</button></div></section>
     </section>
-    <section id="map-favorites" class="favorites" aria-label="관심 부스">
+    <section id="map-favorites" class="favorites" aria-label="관심 부스와 굿즈·특전">
       <div class="favorites-heading"><h2><span class="star">★</span> 관심 부스 <span id="favorite-count">0</span></h2><span id="storage-status">이 기기에 자동 저장</span><div id="favorite-pages" class="favorite-pages" hidden><button id="favorites-prev" aria-label="이전 관심 부스">‹</button><span id="favorite-page" aria-live="polite"></span><button id="favorites-next" aria-label="다음 관심 부스">›</button></div></div>
-      <div id="favorite-day-filter" class="favorite-day-filter" role="group" aria-label="관심 부스 방문일 필터"><button data-day="all" aria-pressed="true">전체 <span data-day-count="all">0</span></button><button data-day="19" aria-pressed="false">19 토 <span data-day-count="19">0</span></button><button data-day="20" aria-pressed="false">20 일 <span data-day-count="20">0</span></button><button data-day="21" aria-pressed="false">21 월 <span data-day-count="21">0</span></button></div>
-      <div id="favorite-list" class="favorite-list"></div>
-      <p class="hint"><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M5 9V3a1.5 1.5 0 0 1 3 0v5l2-1 4 2v5l-2 3H6l-5-6q0-2 2-1l2 2"/></svg><span><b>꾹 눌러</b> 관심 등록 · 상세보기에서 19/20/21 방문일 지정</span></p>
+      <div id="favorites-mode-tabs" class="favorites-mode-tabs" role="tablist" aria-label="하단 정보 탭"><button data-favorites-tab="interests" aria-pressed="true">★ 관심 부스</button><button data-favorites-tab="goods" aria-pressed="false">🎁 굿즈·특전 <span id="goods-count">0</span></button></div>
+      <div id="interest-panel">
+        <div id="favorite-day-filter" class="favorite-day-filter" role="group" aria-label="관심 부스 방문일 필터"><button data-day="all" aria-pressed="true">전체 <span data-day-count="all">0</span></button><button data-day="19" aria-pressed="false">19 토 <span data-day-count="19">0</span></button><button data-day="20" aria-pressed="false">20 일 <span data-day-count="20">0</span></button><button data-day="21" aria-pressed="false">21 월 <span data-day-count="21">0</span></button></div>
+        <div id="favorite-list" class="favorite-list"></div>
+        <p class="hint"><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M5 9V3a1.5 1.5 0 0 1 3 0v5l2-1 4 2v5l-2 3H6l-5-6q0-2 2-1l2 2"/></svg><span><b>꾹 눌러</b> 관심 등록 · 상세보기에서 19/20/21 방문일 지정</span></p>
+      </div>
+      <div id="goods-panel" hidden>
+        <div class="goods-tools"><div id="goods-group-tabs" class="goods-group-tabs" role="group" aria-label="굿즈·특전 홀 필터"><button data-goods-group="all" aria-pressed="true">전체</button><button data-goods-group="1-3" aria-pressed="false">1–3홀</button><button data-goods-group="4-6" aria-pressed="false">4–6홀</button><button data-goods-group="7-8" aria-pressed="false">7–8홀</button><button data-goods-group="9-11" aria-pressed="false">9–11홀</button></div><span><b id="goods-visible-count">0</b>개</span></div>
+        <div id="goods-list" class="goods-list"></div>
+        <p class="goods-note">현장 후기 기반 · 재고/배포 조건은 바뀔 수 있음. 카드를 누르면 해당 부스 위치로 바로 이동.</p>
+      </div>
     </section>
     <aside id="map-controls" class="control-panel">
       <div class="visit-legend" aria-label="부스 정보 범례">
