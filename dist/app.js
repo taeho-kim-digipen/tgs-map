@@ -179,7 +179,7 @@
       if(activeMap.id==='campus'){
         if(campusFloorOf(original)!==floorMode)continue;
         if(tier==='overview'){
-          if(floorMode==='1f'&&original.category!=='entrance')continue;
+          if(floorMode==='1f'&&!['entrance','event'].includes(original.category))continue;
           if(floorMode==='2f'&&!['entrance','locker','info'].includes(original.category))continue;
           if(original.category==='restroom')continue;
         }else if(tier==='medium'&&original.category==='restroom')continue;
@@ -581,7 +581,7 @@
       }
       visitBooths=data.booths.filter(b=>data.details.booths[b.id]);
 
-      const campusResponse=await fetch('./navigation/campus.json');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
+      const campusResponse=await fetch('./navigation/campus.json?v=2');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
       data.maps.push(campus);data.views.unshift({id:'campus',label:'멧세 전체',map:'campus',bounds:[45,25,620,600]});
       for(const b of data.booths){b.campus=campus.placements[b.id];if(b.campus)b.campusGeometry={...b,...b.campus,map:'campus',sourceMap:b.campus.sourceMap||b.map};}
       for(const f of data.facilities){f.campus=campus.facilityPlacements[f.id];if(f.campus)f.campusGeometry={...f,...f.campus,map:'campus',sourceMap:f.map};}
@@ -600,6 +600,7 @@
         ['business9',boothCampusBounds(b=>b.map==='business9',7)]
       ]);
       const concourseBounds=[45,168,635,275];campusViewBounds.set('concourse',concourseBounds);
+      const h911Bounds=campusViewBounds.get('halls911');if(h911Bounds)h911Bounds[1]=Math.min(h911Bounds[1],342);
       for(const [key,value] of [...campusViewBounds])if(!value)campusViewBounds.delete(key);
       floorRegions={first:[boothCampusBounds(b=>['main','school'].includes(b.map),16),boothCampusBounds(b=>['halls911','indie9','selected80','business9'].includes(b.map),16)].filter(Boolean),second:[concourseBounds]};
       byId=new Map(data.booths.map(b=>[b.id,b]));
@@ -627,7 +628,7 @@
       try{
       if(window.TGSMapNavigation&&window.TGSNavigation&&window.TGSNavigationSensors){
         const response=await fetch('./navigation/walkable.json');if(!response.ok)throw Error('navigation map');
-        const walkable=await response.json(),campusGrid=await fetch('./navigation/campus-grid.json');if(!campusGrid.ok)throw Error('campus grid');walkable.maps.campus=await campusGrid.json();
+        const walkable=await response.json(),campusGrid=await fetch('./navigation/campus-grid.json?v=2');if(!campusGrid.ok)throw Error('campus grid');walkable.maps.campus=await campusGrid.json();
         navigation=window.TGSMapNavigation.create({data,walkable,announce,mapId:()=>activeMap.id,showCampus:()=>selectView('campus'),
           toScreen:p=>({x:tx+p.x*scale,y:ty+p.y*scale}),
           describeBooth:b=>{const v=visitOf(b);return [v.activities?.join(' · ')||'전시 내용 미확인',v.ticketNote||'정리권 정보 미확인',v.goods||'굿즈 정보 미확인',v.salesNote||'판매 정보 미확인',v.checkedAt?'공식 정보 확인: '+v.checkedAt:''].filter(Boolean).join('\n');},
