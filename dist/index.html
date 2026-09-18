@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#122124">
-  <meta name="tgs-travel-version" content="2026.09.19.2">
+  <meta name="tgs-travel-version" content="2026.09.19.3">
   <meta name="apple-mobile-web-app-title" content="TGS 지도">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -12,15 +12,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="TGS 2026 1–11홀 공식 지도. 부스를 길게 눌러 나만의 관심 부스를 표시하세요.">
   <title>TGS 2026 · 관심 부스 지도</title>
-  <link rel="stylesheet" href="./style.css?v=11">
+  <link rel="stylesheet" href="./style.css?v=12">
   <link rel="stylesheet" href="./travel.css">
   <link rel="stylesheet" href="./visit.css">
   <link rel="stylesheet" href="./navigation/navigation.css?v=7">
   <script src="./navigation/core.js" defer></script>
   <script src="./navigation/sensors.js?v=7" defer></script>
   <script src="./navigation/tgs-navigation.js?v=10" defer></script>
-  <script src="./app.js?v=16" defer></script>
-  <script src="./travel.js" defer></script>
+  <script src="./app.js?v=17" defer></script>
+  <script src="./travel.js?v=2" defer></script>
 </head>
 <body>
   <main id="app" data-mode="portrait">
@@ -61,8 +61,9 @@
     </section>
     <section id="map-favorites" class="favorites" aria-label="관심 부스">
       <div class="favorites-heading"><h2><span class="star">★</span> 관심 부스 <span id="favorite-count">0</span></h2><span id="storage-status">이 기기에 자동 저장</span><div id="favorite-pages" class="favorite-pages" hidden><button id="favorites-prev" aria-label="이전 관심 부스">‹</button><span id="favorite-page" aria-live="polite"></span><button id="favorites-next" aria-label="다음 관심 부스">›</button></div></div>
+      <div id="favorite-day-filter" class="favorite-day-filter" role="group" aria-label="관심 부스 방문일 필터"><button data-day="all" aria-pressed="true">전체 <span data-day-count="all">0</span></button><button data-day="19" aria-pressed="false">19 토 <span data-day-count="19">0</span></button><button data-day="20" aria-pressed="false">20 일 <span data-day-count="20">0</span></button><button data-day="21" aria-pressed="false">21 월 <span data-day-count="21">0</span></button></div>
       <div id="favorite-list" class="favorite-list"></div>
-      <p class="hint"><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M5 9V3a1.5 1.5 0 0 1 3 0v5l2-1 4 2v5l-2 3H6l-5-6q0-2 2-1l2 2"/></svg><span>부스를 <b>꾹 누르면</b> 관심 등록 · 다시 꾹 누르면 해제</span></p>
+      <p class="hint"><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M5 9V3a1.5 1.5 0 0 1 3 0v5l2-1 4 2v5l-2 3H6l-5-6q0-2 2-1l2 2"/></svg><span><b>꾹 눌러</b> 관심 등록 · 상세보기에서 19/20/21 방문일 지정</span></p>
     </section>
     <aside id="map-controls" class="control-panel">
       <div class="visit-legend" aria-label="부스 정보 범례">
@@ -87,7 +88,7 @@
       <input id="interest-file" type="file" accept="application/json,.json" hidden>
       <p id="interest-transfer-status" role="status" hidden></p>
     </section>
-    <p>부스를 길게 누르면 관심 표시를 켜고 끌 수 있습니다. 짧게 누르면 부스 위치만 선택됩니다. 선택 후 작은 카드의 <b>보기</b>를 눌러야 상세 정보가 열립니다. 부스를 두 번 누르면 경로 안내, 같은 부스를 다시 두 번 누르면 안내가 해제됩니다.</p><p>부스 이름·번호, 보관함·배터리 같은 시설명으로 검색할 수 있습니다. 두 손가락으로 지도를 확대하세요.</p><p>위에서 아이폰 가로·세로·PC 모드를 선택할 수 있습니다. 자동 모드는 화면 방향에 맞춰집니다.</p><p>입구마다 이용일과 시간이 다릅니다. 입구 아이콘을 눌러 원본 지도에 적힌 조건을 확인하세요. 숫자가 붙은 시설 아이콘은 여러 위치를 묶은 표시입니다.</p><p>관심 목록은 현재 브라우저에 저장됩니다.</p><p>멧세 전체 지도는 실제 건물·보행로에 공식 부스 도면을 근사 정합했습니다. GPS는 이 좌표에 표시하며, 실내에서 어긋나면 지금 서 있는 통로를 한 번 눌러 맞출 수 있습니다. 홀 사이 이동은 2F 중앙몰·연결교와 표시된 계단을 이용합니다. 일반공개일 10시 전에는 1–8홀과 9–11홀 사이 이동이 제한됩니다. 현장 통제는 실시간으로 반영하지 않습니다.</p><div id="source-info"></div></dialog>
+    <p>부스를 길게 누르면 관심 표시를 켜고 끌 수 있습니다. 짧게 누르면 부스 위치만 선택됩니다. 선택 후 작은 카드의 <b>보기</b>를 눌러야 상세 정보가 열립니다. 부스를 두 번 누르면 경로 안내, 같은 부스를 다시 두 번 누르면 안내가 해제됩니다.</p><p>부스 이름·번호, 보관함·배터리 같은 시설명으로 검색할 수 있습니다. 두 손가락으로 지도를 확대하세요.</p><p>위에서 아이폰 가로·세로·PC 모드를 선택할 수 있습니다. 자동 모드는 화면 방향에 맞춰집니다.</p><p>입구마다 이용일과 시간이 다릅니다. 입구 아이콘을 눌러 원본 지도에 적힌 조건을 확인하세요. 숫자가 붙은 시설 아이콘은 여러 위치를 묶은 표시입니다.</p><p>관심 목록은 현재 브라우저에 저장됩니다. 관심 부스는 9월 19·20·21일 중 여러 날짜에 지정할 수 있고, 관심 부스 영역의 날짜 버튼으로 해당 날짜만 지도에 표시할 수 있습니다.</p><p>멧세 전체 지도는 실제 건물·보행로에 공식 부스 도면을 근사 정합했습니다. GPS는 이 좌표에 표시하며, 실내에서 어긋나면 지금 서 있는 통로를 한 번 눌러 맞출 수 있습니다. 홀 사이 이동은 2F 중앙몰·연결교와 표시된 계단을 이용합니다. 일반공개일 10시 전에는 1–8홀과 9–11홀 사이 이동이 제한됩니다. 현장 통제는 실시간으로 반영하지 않습니다.</p><div id="source-info"></div></dialog>
   <noscript>이 지도는 JavaScript가 켜진 Safari에서 사용할 수 있습니다.</noscript>
 </body>
 </html>
