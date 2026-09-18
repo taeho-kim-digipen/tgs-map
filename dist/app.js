@@ -15,36 +15,51 @@
     21:['07-C04','08-N06','08-N07','09-E104','09-E66']
   };
   const GOODS_SPOTS = [
-    {key:'razer',name:'Razer',group:'1-3',location:'1홀 · Creator Lounge',kind:'키링',detail:'키보드 스위치 키링. 발광 타입이며 받침대가 고급스러운 구성이라는 현장 후기.',map:'main',x:824,y:79,caution:'크리에이터 라운지 내 협찬 전시 · 이용 자격/배포 조건 현장 확인'},
-    {key:'redbull-sampling',name:'Red Bull Sampling Station',group:'1-3',location:'1홀 · Event Stage 옆',kind:'배포',detail:'레드불 샘플링 스테이션. 현장 후기상 여러 캔을 받을 수 있었다는 제보.',map:'main',x:892,y:79},
-    {key:'crowxis',name:'Crowxis / CFD Sales',group:'1-3',booth:'01-C13',kind:'스탬프',detail:'AORUS와 연계 스탬프 랠리. 홀 6 AORUS도 방문해야 하는 방식.'},
-    {key:'benq',name:'BenQ Japan',group:'1-3',booth:'02-C07',kind:'전시',detail:'Halo 2 및 최신 모니터 전시 추천.'},
-    {key:'gamesir',name:'GameSir',group:'1-3',booth:'02-C17',kind:'배포',detail:'컨트롤러 핀 배지 배포 현장 후기.'},
-    {key:'galleria',name:'GALLERIA',group:'1-3',booth:'02-C21',kind:'전시',detail:'VSPO! 등 콜라보 PC의 사이드 패널 전시.'},
-    {key:'pulsar',name:'Pulsar Gaming Gears',group:'1-3',booth:'02-C20',kind:'챌린지',detail:'10초 챌린지 참가 상품으로 키보드 스위치 키링. Meiy 마우스패드 전시도 확인 가능.'},
-    {key:'corsair-elgato',name:'CORSAIR · Elgato',group:'1-3',booth:'03-C02',kind:'추첨',detail:'Elgato 관련 포스트/SNS 참여 추첨이 있다는 현장 후기.'},
-    {key:'topre',name:'Topre',group:'1-3',booth:'02-N09',kind:'전시',detail:'콜라보 모델 전시.'},
+    // X / 현장 후기에서 발견한 디바이스·배포 정보
+    {key:'razer',name:'Razer',group:'1-3',location:'1홀 · Creator Lounge',kind:'키링',detail:'현장 X 후기: 발광 키보드 스위치 키링. 받침대 포함 형태. 크리에이터 라운지 협찬 공간이라 일반 관람객 수령 가능 여부는 현장 확인 필요.',source:'현장 X',map:'main',x:824,y:79,caution:'Creator Lounge 이용 자격이 있을 수 있음'},
+    {key:'redbull-sampling',name:'Red Bull Sampling Station',group:'1-3',location:'1홀 · Event Stage 옆',kind:'무료',detail:'현장 X 추천글에서 레드불 샘플링을 많이 받을 수 있었다는 후기. 수량·일별 운영은 현장 상황에 따라 달라질 수 있음.',source:'현장 X',map:'main',x:892,y:79},
+    {key:'redbull-tumbler',name:'Red Bull Gaming Sphere',group:'9-11',facility:'redbull-gaming-sphere',kind:'무료',detail:'Red Bull Gaming 공식 X: Gaming Sphere On Tour 방문자 누구나 발광 텀블러 수령 가능. 레드불을 넣으면 빛나는 타입.',source:'공식 X',caution:'재고 소진 가능'},
+    {key:'crowxis',name:'Crowxis / CFD Sales',group:'1-3',booth:'01-C13',kind:'스탬프',detail:'현장 X 추천글: AORUS와 연계 스탬프 랠리. 홀 6 AORUS까지 함께 방문해야 함.',source:'현장 X'},
+    {key:'benq',name:'BenQ MOBIUZ',group:'1-3',booth:'02-C07',kind:'키링',detail:'일반 공개일 한정. 부스 체험을 X에 게시하면 오리지널 파우치, 4개 체험 구역을 모두 돌면 TGS2026 한정 키보드 키링. 각 수량 한정.',source:'공식'},
+    {key:'gamesir',name:'GameSir',group:'1-3',booth:'02-C17',kind:'배포',detail:'현장 X 후기: 컨트롤러 핀 배지 배포. 정확한 일별 조건·잔여 수량은 현장 확인.',source:'현장 X'},
+    {key:'galleria',name:'GALLERIA',group:'1-3',booth:'02-C21',kind:'무료',detail:'부스 방문으로 오리지널 클리어파일. 현장 설문 또는 GALLERIA PC 촬영 + #ガレリアTGS2026 SNS 게시로 특제 캔배지, 이후 추첨 당첨 시 머플러 타월. NURO Games LINE 친구추가로 天鬼ぷるる 한정 스티커도 제공.',source:'공식/X'},
+    {key:'pulsar',name:'Pulsar Gaming Gears',group:'1-3',booth:'02-C20',kind:'챌린지',detail:'10 Second Challenge는 전 일정 상시 실시, 누구나 참가 가능하며 경품 있음. 현장 X 후기에서 키보드 스위치 키링 수령 사례 확인. AIM Challenge·게스트전도 경품 있음.',source:'공식+현장 X'},
+    {key:'corsair-elgato',name:'CORSAIR · Elgato',group:'1-3',booth:'03-C02',kind:'추첨',detail:'현장 X 추천글: Elgato 관련 SNS 포스트 참여 추첨이 있다는 후기. 세부 경품·수량은 현장 안내 확인.',source:'현장 X'},
+    {key:'topre',name:'Topre',group:'1-3',booth:'02-N09',kind:'전시',detail:'현장 X 추천글: 콜라보 모델 전시. 별도 무료 배포 조건은 현재 확인되지 않음.',source:'현장 X'},
 
-    {key:'minecraft',name:'Minecraft',group:'4-6',booth:'04-C03',kind:'체험',detail:'거대한 크리퍼 테마 · Minecraft Dungeons 2 체험 플레이.'},
-    {key:'aorus',name:'AORUS',group:'4-6',booth:'06-C02',kind:'스탬프',detail:'Crowxis와 연계 스탬프 랠리. 홀 1 Crowxis도 방문해야 하는 방식.'},
-    {key:'rog',name:'ROG / ASUS JAPAN',group:'4-6',booth:'06-N03',kind:'이벤트',detail:'LINE 추가 후 가라폰(추첨 룰렛) 참여 현장 후기.'},
+    // 공식 X / 공식 페이지로 조건까지 확인한 일반 전시관 특전
+    {key:'netmarble',name:'Netmarble',group:'1-3',booth:'02-N12',kind:'X특전',detail:'파ールインブルー: 방문 스티커, 공식 X 팔로우로 클리어카드, 지정 X 게시로 메모리얼 필름롤, 시연으로 렌티큘러 카드. 스탬프/시연으로 아크릴 키링·아크릴 스탠드·점보 쿠션 추첨. 샹그릴라 프론티어는 사전등록 나ップ색·클리어파일, X 팔로우 부채 등.',source:'공식/X'},
+    {key:'nhn',name:'NHN PlayArt',group:'1-3',booth:'02-S08',kind:'무료',detail:'부스 방문자에게 각일 선착순 오리지널 숄더백(사코슈). 미션 스탬프를 모으면 한정 카드세트 A/B 지급.',source:'공식'},
+    {key:'lowiro',name:'lowiro / Arcaea',group:'1-3',booth:'03-C01',kind:'무료',detail:'공식 X: 키비주얼 클리어파일 무료 배포. Arcaea 시연 시 랜덤 캔배지, Arcaea 공식 X 팔로우 + 포토부스 촬영 시 「Balor」 재킷 스티커.',source:'공식 X'},
+    {key:'dmm',name:'DMM GAMES',group:'1-3',booth:'03-N04',kind:'가챠',detail:'스탬프를 모아 최대 3회 거대 가챠. T셔츠·아크릴 카라비너·핀배지·데코테이프·스마트폰 그립·ESC 키캡·미니 마우스패드 스트랩 등. 刀剣乱舞ぱずぎり 부채/스티커, マブラヴ 걸즈가든 아크릴 키링·가면, Dot Abyss 음료/명함 등도 있음.',source:'공식'},
+    {key:'koei',name:'KOEI TECMO GAMES',group:'1-3',booth:'03-N07',kind:'미션',detail:'KT App 부스 설문 완료 화면 제시로 오리지널 쿨러 타월. KT 부스+물판 W 체크인 미션으로 포스트카드. 「#TGSでりゅうみこ」 X 게시로 특제 스티커 시트도 수량 한정.',source:'공식/X'},
+    {key:'razbam',name:'RAZBAM JAPAN',group:'1-3',booth:'03-C06',kind:'무료',detail:'공식 X(일반 공개일 9/19–21): 플라이트 태그, 미니 사코슈, RAZBAM JAPAN 스티커, ZERO-SIM 클리어파일 등 오리지널 노벨티.',source:'공식 X',caution:'수량 한정·세부 조건 현장 확인'},
 
-    {key:'googleplay',name:'Google Play',group:'7-8',booth:'07-N08',kind:'특전',detail:'Google Play 플래티넘 랭크 이상이면 게임 플레이로 약 1000pt를 받을 수 있다는 현장 후기.'},
-    {key:'storm',name:'STORM',group:'7-8',booth:'08-C11',kind:'배포',detail:'부스 촬영 + X 게시 계열 이벤트. 현장 후기상 나노 다이아몬드 그리스 등의 특전.'},
-    {key:'kioxia',name:'KIOXIA',group:'7-8',booth:'08-C18',kind:'스탬프',detail:'G TUNE과 연계 스탬프 랠리. 두 부스가 가까운 편.'},
-    {key:'gtune',name:'G TUNE / NEXTGEAR',group:'7-8',booth:'08-N06',kind:'스탬프',detail:'PC 전시 다수. KIOXIA와 연계 스탬프 랠리.'},
-    {key:'sofmap',name:'Sofmap',group:'7-8',booth:'08-C16',kind:'체험',detail:'GravaStar 게이밍 디바이스 체험 추천.'},
-    {key:'msi',name:'MSI',group:'7-8',booth:'08-N18',kind:'전시',detail:'게이밍 PC 전시.'},
-    {key:'ktc',name:'KTC',group:'7-8',booth:'08-N14',kind:'전시',detail:'모니터 전시.'},
+    {key:'minecraft',name:'Minecraft',group:'4-6',booth:'04-C03',kind:'체험',detail:'거대한 크리퍼 테마 전시와 Minecraft Dungeons 2 체험. 현재 굿즈 조건은 별도 확인되지 않음.',source:'현장 X'},
+    {key:'sega',name:'SEGA / ATLUS',group:'4-6',booth:'04-N01',kind:'키링',detail:'SEGA Account 로그인 캠페인 화면을 현장 직원에게 제시하면 「소닉&테일즈 흔들흔들 키링」 선착순 1인 1개. 위시리스트/예약 조건 스탬프 수만큼 가라폰: 세가 로고 텀블러, 잭프로스트 인형 키링, ROG×Intel 타월, 충전 케이블 등.',source:'공식'},
+    {key:'aorus',name:'AORUS',group:'4-6',booth:'06-C02',kind:'스탬프',detail:'현장 X 추천글: Crowxis와 연계 스탬프 랠리. 홀 1 Crowxis 방문 필요.',source:'현장 X'},
+    {key:'rog',name:'ROG / ASUS JAPAN',group:'4-6',booth:'06-N03',kind:'추첨',detail:'ASUS 공식 LINE 등록 후 부스 대추첨회 참가. ROG Cetra II Core, ROG Slash Sling Bag 4.0 등 경품. 수량·경품은 소진/변경 가능.',source:'공식'},
+    {key:'happinet',name:'Happinet',group:'4-6',booth:'06-N04',kind:'다수',detail:'시연·X 팔로우·Wishlist 등 조건별 노벨티 다수. Beast of Reincarnation 로고 스티커, Tokyo Stories 마그넷/홀로그램 티켓, Artist Impact·Stray 포스트카드류 등.',source:'공식/보도'},
+    {key:'bushiroad',name:'Bushiroad',group:'4-6',booth:'06-C01',kind:'시연특전',detail:'BanG Dream! Our Notes: 공통 소책자. 일반 공개일 시 撃奏 라이브 레인 랜덤 클리어파일, 2회째 승자 랜덤 미니수첩. 프리플레이 레인은 랜덤 레이저 티켓. ヴァイスシュヴァルツ 온라인은 시연/Wishlist로 티켓풍 카드.',source:'공식 X 인용'},
+    {key:'playstation',name:'PlayStation',group:'4-6',booth:'06-S01',kind:'무료',detail:'시연 시 카라비너付き PVC 미니포치(PS/아스트로봇/도코데모잇쇼/사루겟츄 4종 랜덤). GTA VI 시어터 관람 시 L사이즈 T셔츠, #PS5 SNS 게시로 GTA VI 스티커 3장 세트. 공식 LINE 친구추가 선착순 5,000명 데님 카라비너.',source:'공식'},
 
-    {key:'pixio',name:'Pixio',group:'9-11',booth:'09-W05',kind:'추천',detail:'9홀 식음료 공간 출구 근처 추천 스팟.'},
-    {key:'kibu',name:'KIBU',group:'9-11',booth:'10-E19',kind:'배포',detail:'도파갓키(ドパガッキ) 볼펜 배포 현장 후기.'},
-    {key:'fumo',name:'Fumo Shop × Arbiter Studio',group:'9-11',booth:'10-E20',kind:'전시',detail:'NIJISANJI EN 등 콜라보 모델 다수 전시.'},
-    {key:'flydigi',name:'Flydigi',group:'9-11',booth:'10-C09',kind:'전시',detail:'APEX 6 등 컨트롤러 전시.'},
-    {key:'rabbit0',name:'Rabbit0 / ATK Gear',group:'9-11',booth:'10-C10',kind:'전시',detail:'콜라보 모델 다수 전시.'},
-    {key:'keychron',name:'Keychron',group:'9-11',booth:'10-E22',kind:'키링',detail:'가챠 상품으로 키보드 스위치 키링을 받을 수 있다는 현장 후기.'},
-    {key:'xvx',name:'XVX Keyboard',group:'9-11',location:'11홀 · 11-E20',kind:'키링',detail:'세라믹 사양의 키보드 스위치 키링 현장 후기.',map:'halls911',x:120.5,y:638.5},
-    {key:'aula',name:'AULA',group:'9-11',booth:'11-E03',kind:'키링',detail:'직접 커스텀할 수 있는 키보드 스위치 키링 현장 후기.'}
+    {key:'nexon',name:'NEXON',group:'7-8',booth:'07-C04',kind:'무료',detail:'부스 방문으로 마비노기 모바일/Faraidoria A4 클리어파일(수량 한정). NEXON 공식 LINE 친구추가로 한정 스티커 선착순.',source:'공식/보도'},
+    {key:'googleplay',name:'Google Play',group:'7-8',booth:'07-N08',kind:'특전',detail:'현장 X 추천글: Google Play 플래티넘 랭크 이상 이용자는 게임 플레이로 약 1000pt 특전 사례. 당일 자격·잔여 여부 확인 필요.',source:'현장 X'},
+    {key:'storm',name:'STORM',group:'7-8',booth:'08-C11',kind:'X특전',detail:'공식: 부스 촬영 후 X/SNS 게시로 10,000엔 할인 쿠폰·나노 다이아몬드 그리스·STORM 야돔 등을 현장 지급. 수량 한정.',source:'공식'},
+    {key:'kioxia',name:'KIOXIA',group:'7-8',booth:'08-C18',kind:'스탬프',detail:'현장 X 추천글: G TUNE과 연계 스탬프 랠리. 공식 사전 공지에서는 단독 노벨티 품목을 명시하지 않아 현장 확인 권장.',source:'현장 X'},
+    {key:'gtune',name:'G TUNE / NEXTGEAR',group:'7-8',booth:'08-N06',kind:'시연특전',detail:'G TUNE × KIOXIA 연계 스탬프 랠리 현장 후기. 일반 공개일에는 「슈퍼 단간론파2×2」 시연 특전 아크릴 참도 안내됨.',source:'현장 X+공식'},
+    {key:'sofmap',name:'Sofmap',group:'7-8',booth:'08-C16',kind:'체험',detail:'현장 X 추천글: GravaStar 게이밍 디바이스 체험 추천. 별도 배포품은 현장 확인.',source:'현장 X'},
+    {key:'msi',name:'MSI',group:'7-8',booth:'08-N18',kind:'SNS특전',detail:'MSI 부스 촬영 후 #MSI_TGS2026 로 SNS 게시하고 화면 제시 → 40주년 기념 노벨티. 일반 공개일에는 5개 스탬프를 모아 가라폰 추첨도 운영.',source:'공식'},
+    {key:'ktc',name:'KTC',group:'7-8',booth:'08-N14',kind:'X특전',detail:'공식 X 팔로우 → 에코백, Instagram 팔로우 → 마우스패드, 둘 다 팔로우 → 극세 클리닝 크로스 추가. 부스 촬영 + #KTC #KEYTOCOMBAT #TGS2026 게시 후 퀴즈 정답 시 룰렛 추첨(1일 1회).',source:'공식'},
+    {key:'pixio',name:'Pixio',group:'9-11',booth:'09-W05',kind:'추천',detail:'현장 X 추천글: 9홀 식음료 공간 출구 근처. 장비 전시 위주로 확인되며 무료 배포 조건은 현장 확인.',source:'현장 X'},
+    {key:'pulsar-store',name:'Pulsar Playstore',group:'9-11',location:'9홀 · 09-W39',kind:'판매',detail:'공식 물판: Pulsar 게이밍기어, PRX 공식 굿즈, BAULT VCT Pacific 트레이딩카드. FS-1 Blue&Red, TenZ 2.0, PRX×Pulsar 콜라보 마우스패드 등 선행/한정 판매. 현금 불가.',source:'공식',map:'halls911',x:183,y:146},
+    {key:'kibu',name:'KIBU',group:'9-11',booth:'10-E19',kind:'배포',detail:'현장 X 후기: 도파갓키(ドパガッキ) 볼펜 배포.',source:'현장 X'},
+    {key:'fumo',name:'Fumo Shop × Arbiter Studio',group:'9-11',booth:'10-E20',kind:'전시',detail:'현장 X 추천글: NIJISANJI EN 등 콜라보 모델 다수 전시.',source:'현장 X'},
+    {key:'flydigi',name:'Flydigi',group:'9-11',booth:'10-C09',kind:'전시',detail:'현장 X 추천글: APEX 6 등 컨트롤러 전시.',source:'현장 X'},
+    {key:'rabbit0',name:'Rabbit0 / ATK Gear',group:'9-11',booth:'10-C10',kind:'전시',detail:'현장 X 추천글: 콜라보 모델 다수 전시.',source:'현장 X'},
+    {key:'keychron',name:'Keychron',group:'9-11',booth:'10-E22',kind:'X가챠',detail:'공식 X: @KeychronJP 팔로우 + 지정 게시물 리포스트 + 화면 제시 → 무료 가챠 1회. C3 HE 8K(1일 1명), K2-C1H-JIS(1일 5명), 꽝이어도 키링 지급. 수량 소진 시 종료.',source:'공식 X'},
+    {key:'xvx',name:'XVX Keyboard',group:'9-11',location:'11홀 · 11-E20',kind:'키링',detail:'현장 X 후기: 세라믹 사양 키보드 스위치 키링. XVX 부스는 키보드·키캡·스위치 전시도 다수.',source:'현장 X',map:'halls911',x:120.5,y:638.5},
+    {key:'aula',name:'AULA',group:'9-11',booth:'11-E03',kind:'키링',detail:'현장 X 후기: 직접 커스텀 가능한 키보드 스위치 키링. 공식 X에서는 게임 참여 경품 및 매일 키보드 추첨도 안내.',source:'현장 X+공식'}
   ];
   let favoritesPanelMode='interests',goodsGroupFilter='all';
   let contentItems=[], data, activeMap, activeView, byId, favorites = new Set(), storageOkay = true;
@@ -274,6 +289,7 @@
     if(favoritesPanelMode==='goods')renderGoodsSpots();
   }
   function focusGoodsSpot(spot){
+    if(spot.facility&&data.facilities.some(item=>item.id===spot.facility)){focusFacility(spot.facility);announce(`${spot.name} · 지도 바로가기`);return;}
     if(spot.booth&&byId.has(spot.booth)){focusBooth(spot.booth);announce(`${spot.name} · 지도 바로가기`);return;}
     const m=data.maps.find(item=>item.id===spot.map);if(!m||!Number.isFinite(spot.x)||!Number.isFinite(spot.y))return;
     closeResults(false);closeDetail();if(!activeMap||activeMap.id!==m.id)setMap(m.id);
@@ -296,6 +312,7 @@
       const title=document.createElement('strong');title.textContent=spot.name;
       const detail=document.createElement('span');detail.className='goods-detail';detail.textContent=spot.detail;
       card.append(top,title,detail);
+      if(spot.source){const evidence=document.createElement('span');evidence.className='goods-evidence';evidence.textContent='확인: '+spot.source;card.append(evidence);}
       if(spot.caution){const caution=document.createElement('em');caution.textContent=spot.caution;card.append(caution);}
       card.addEventListener('click',()=>focusGoodsSpot(spot));list.append(card);
     }
