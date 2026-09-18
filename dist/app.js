@@ -666,7 +666,7 @@
       catch{favorites=new Set(data.defaults.filter(id=>byId.has(id)));storageOkay=false;$('storage-status').textContent='현재 창에서만 유지';}
       try{if(localStorage.getItem(PLAN_MIGRATION_KEY)!=='1'){for(const id of data.defaults)if(byId.has(id))favorites.add(id);save();localStorage.setItem(PLAN_MIGRATION_KEY,'1');}}catch{}
       loadDayPlans();
-      for(const button of $('favorite-day-filter').querySelectorAll('button'))button.addEventListener('click',()=>setFavoriteDayFilter(button.dataset.day));
+      for(const button of $('favorite-day-filter').children)button.addEventListener('click',()=>setFavoriteDayFilter(button.dataset.day));
       for(const v of data.views){const b=document.createElement('button');b.textContent=v.label;b.dataset.view=v.id;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>selectView(v.id));$('hall-nav').append(b);}
       for(const [id,category] of Object.entries(categories)){const button=document.createElement('button');button.style.setProperty('--facility-color',category.color);button.append(facilityIcon(id));const label=document.createElement('span');label.textContent=category.label;button.append(label);button.setAttribute('aria-label',`${category.label} 위치 찾기`);button.addEventListener('click',()=>{const items=data.facilities.filter(f=>f.category===id);$('booth-search').blur();if(items.length===1)focusFacility(items[0].id);else openResults(items,category.label);});$('facility-nav').append(button);}
       const source=$('source-info'),p=document.createElement('p');p.textContent=`공식 영문 배치도 · 2026년 9월 공개본 · ${data.booths.length}개 부스 구역`;
