@@ -58,14 +58,28 @@ function makeGrid({width,height,cell=.5,walkable=[],obstacles=[],clearance=.15,b
 }
 const point=(g,id)=>({x:(id%g.w+.5)*g.cell,y:(Math.floor(id/g.w)+.5)*g.cell});
 function cellAt(g,p){if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.y<0||p.x>=g.width||p.y>=g.height)return -1;return Math.floor(p.y/g.cell)*g.w+Math.floor(p.x/g.cell);}
-function snap(g,p,radius=0){
-  const id=cellAt(g,p);if(id<0)throw Error('outside');if(g.allowed[id])return id;
-  let best=-1,bestDistance=radius;const r=Math.ceil(radius/g.cell),x=id%g.w,y=Math.floor(id/g.w);
-  for(let yy=Math.max(0,y-r);yy<=Math.min(g.h-1,y+r);yy++)for(let xx=Math.max(0,x-r);xx<=Math.min(g.w-1,x+r);xx++){
-    const i=yy*g.w+xx;if(!g.allowed[i])continue;const q=point(g,i),d=Math.hypot(p.x-q.x,p.y-q.y);if(d<=bestDistance){best=i;bestDistance=d;}
+function nearestAllowed(g,p,radius=Infinity){
+  if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))throw Error('outside');
+  const cx=clamp(Math.floor(clamp(p.x,0,Math.max(0,g.width-1e-9))/g.cell),0,g.w-1);
+  const cy=clamp(Math.floor(clamp(p.y,0,Math.max(0,g.height-1e-9))/g.cell),0,g.h-1);
+  const center=cy*g.w+cx;if(g.allowed[center])return center;
+  const maxCells=Number.isFinite(radius)?Math.max(0,Math.ceil(radius/g.cell)):Math.max(g.w,g.h);
+  let best=-1,bestDistance=Infinity;
+  const consider=(x,y)=>{
+    if(x<0||y<0||x>=g.w||y>=g.h)return;
+    const id=y*g.w+x;if(!g.allowed[id])return;
+    const q=point(g,id),d=Math.hypot(p.x-q.x,p.y-q.y);
+    if((!Number.isFinite(radius)||d<=radius)&&d<bestDistance){best=id;bestDistance=d;}
+  };
+  for(let r=1;r<=maxCells;r++){
+    const x0=cx-r,x1=cx+r,y0=cy-r,y1=cy+r;
+    for(let x=x0;x<=x1;x++){consider(x,y0);if(y1!==y0)consider(x,y1);}
+    for(let y=y0+1;y<y1;y++){consider(x0,y);if(x1!==x0)consider(x1,y);}
+    if(best>=0)return best;
   }
-  if(best<0)throw Error('off-path');return best;
+  throw Error('off-path');
 }
+function snap(g,p,radius=0){return nearestAllowed(g,p,radius);}
 function visible(g,first,last){
   const free=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&g.allowed[y*g.w+x];
   let x=first%g.w,y=Math.floor(first/g.w);const ex=last%g.w,ey=Math.floor(last/g.w),dx=ex-x,dy=ey-y,sx=Math.sign(dx),sy=Math.sign(dy),stepX=dx?1/Math.abs(dx):Infinity,stepY=dy?1/Math.abs(dy):Infinity;
@@ -79,8 +93,12 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
   for(let y=Math.max(0,Math.floor((y0-margin)/g.cell));y<Math.min(g.h,Math.ceil((y1+margin)/g.cell));y++)for(let x=Math.max(0,Math.floor((x0-margin)/g.cell));x<Math.min(g.w,Math.ceil((x1+margin)/g.cell));x++){
     const id=y*g.w+x,p=point(g,id);if(g.allowed[id]&&rectDistance(p)>0&&rectDistance(p)<=margin)goals.add(id);
   }
-  if(!goals.size)throw Error('no-entrance');
+  if(!goals.size){
+    const center={x:(x0+x1)/2,y:(y0+y1)/2};
+    goals.add(nearestAllowed(g,center,Math.hypot(g.width,g.height)));
+  }
   const start=snap(g,from,Math.max(g.cell*1.5,startSnapRadius||0)),startPoint=point(g,start),startSnapDistance=Math.hypot(from.x-startPoint.x,from.y-startPoint.y),n=g.w*g.h,closed=new Uint8Array(n),cost=new Float64Array(n),parent=new Int32Array(n);cost.fill(Infinity);parent.fill(-1);
+  const rawStart={x:clamp(from.x,0,g.width),y:clamp(from.y,0,g.height)};
   const heuristic=id=>Math.max(0,rectDistance(point(g,id))-margin)/g.cell;
   const heap=new Heap();cost[start]=0;heap.push({id:start,f:heuristic(start)});
   const free=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&g.allowed[y*g.w+x];
@@ -89,7 +107,9 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
     if(goals.has(id)){
       const chain=[];for(let i=id;i!==-1;i=parent[i])chain.push(i);chain.reverse();const reduced=[start];
       for(let i=0;i<chain.length-1;){let j=Math.min(chain.length-1,i+120);while(j>i+1&&!visible(g,chain[i],chain[j]))j--;reduced.push(chain[j]);i=j;}
-      const line=reduced.map(i=>point(g,i));return {line,length:length(line),cellPath:reduced,startSnapDistance};
+      const line=reduced.map(i=>point(g,i));
+      if(startSnapDistance>g.cell*2&&Math.hypot(rawStart.x-line[0].x,rawStart.y-line[0].y)>g.cell)line.unshift(rawStart);
+      return {line,length:length(line),cellPath:reduced,startSnapDistance};
     }
     const x=id%g.w,y=Math.floor(id/g.w);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
@@ -99,8 +119,15 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
       cost[next]=v;parent[next]=id;heap.push({id:next,f:v+heuristic(next)});
     }
   }
-  throw Error('no-path');
+  // The official walkable graph can contain gaps around outdoor queues or unmapped connectors.
+  // Never leave the user with no guidance: fall back to a clearly-marked direct guidance line.
+  let goal=-1,best=Infinity;for(const id of goals){const q=point(g,id),d=Math.hypot(q.x-startPoint.x,q.y-startPoint.y);if(d<best){best=d;goal=id;}}
+  if(goal<0)throw Error('no-path');
+  const goalPoint=point(g,goal),line=[rawStart];
+  if(Math.hypot(rawStart.x-startPoint.x,rawStart.y-startPoint.y)>g.cell)line.push(startPoint);
+  if(Math.hypot(line.at(-1).x-goalPoint.x,line.at(-1).y-goalPoint.y)>g.cell)line.push(goalPoint);
+  return {line,length:length(line),cellPath:[start,goal],startSnapDistance,fallback:'direct'};
 }
-const api={clamp,norm,length,validFix,compass,proximity,project,calibration,locate,headingOnMap,campusRestricted,makeGrid,point,cellAt,snap,visible,routeToBooth};
+const api={clamp,norm,length,validFix,compass,proximity,project,calibration,locate,headingOnMap,campusRestricted,makeGrid,point,cellAt,nearestAllowed,snap,visible,routeToBooth};
 if(typeof module!=='undefined')module.exports=api;root.TGSNavigation=api;
 })(typeof window==='undefined'?globalThis:window);
