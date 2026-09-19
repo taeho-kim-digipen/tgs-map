@@ -9,9 +9,23 @@ function create(config){
   const grids=new Map(),sentMaps=new Set(),pending=new Map();
   const STORAGE='tgs2026-navigation-calibration-v1';
   let calibrationByMap={},firstAnchor=null,origin=null,target=null,route=null,choosing=false,routeToken=0,worker=null,reading={},lastOriginKey='',lastRouteOrigin=null,fitNext=false,frame=0;
-  let following=false,zoomNext=false,collapsed=false,lastCenter='',outsideVenue=false;
+  let following=false,zoomNext=false,collapsed=false,lastCenter='',outsideVenue=false,mapRotation=0;
   // SVGElement.hidden is not a reflected property in Safari. Change the actual attribute.
   function edgeVisible(value){const el=$('nav-edge');if(value)el.removeAttribute('hidden');else el.setAttribute('hidden','');}
+  const angleDelta=(to,from)=>((to-from+540)%360)-180;
+  function syncMapRotation(forceNorth=false){
+    if(!config.setMapRotation)return;
+    const c=origin&&calibrationFor(origin.mapId),heading=reading.heading;
+    if(forceNorth||!following||!origin||!c||heading===null||heading===undefined){
+      mapRotation=0;config.setMapRotation(0,null);return;
+    }
+    const desired=-(N.headingOnMap(heading,c)-(config.frameRotation?.()||0));
+    const delta=angleDelta(desired,mapRotation);
+    // Damp compass noise so the floor plan turns smoothly instead of twitching.
+    mapRotation+=delta*(Math.abs(delta)>35?.42:.24);
+    if(Math.abs(angleDelta(desired,mapRotation))<.35)mapRotation=desired;
+    config.setMapRotation(mapRotation,origin);
+  }
   function validCalibration(c){return c&&['x','y','a','b','unitsPerMeter','northAngle'].every(k=>Number.isFinite(c[k]))&&c.unitsPerMeter>0&&c.unitsPerMeter<100&&c.origin&&Number.isFinite(c.origin.latitude)&&Math.abs(c.origin.latitude)<=90&&Number.isFinite(c.origin.longitude)&&Math.abs(c.origin.longitude)<=180&&Math.abs(Math.hypot(c.a,c.b)-c.unitsPerMeter)<1e-6;}
   try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved?.version===1)for(const [id,c] of Object.entries(saved.maps||{}))if(maps.has(id)&&validCalibration(c))calibrationByMap[id]=c;}catch{}
   function saveCalibration(){try{localStorage.setItem(STORAGE,JSON.stringify({version:1,maps:calibrationByMap}));}catch{config.announce('위치 보정은 현재 창에서만 유지됩니다.');}}
@@ -39,7 +53,7 @@ function create(config){
     $('nav-pick-hint').textContent=pendingAnchor?'다른 곳으로 이동한 뒤, 지금 서 있는 통로를 눌러 주세요.':'지금 서 있는 통로를 눌러 내 위치를 맞추세요.';
     $('nav-recenter').textContent=following?'◎ 따라가는 중':'◎ 내 위치 따라가기';
     $('nav-recenter').setAttribute('aria-pressed',String(following));
-    $('nav-compass').textContent=reading.permission==='denied'?'방향 권한 다시 요청':'방향 켜기';
+    $('nav-compass').textContent=reading.permission==='denied'?'방향 권한 다시 요청':'내가 보는 방향으로';
   }
   function controls(){
     $('app').classList.toggle('nav-controls-hidden',collapsed);
@@ -52,7 +66,7 @@ function create(config){
     if(!zoomIn&&key===lastCenter)return;lastCenter=key;
     config.center(origin,{zoomIn,cardHeight:target?$('nav-card').getBoundingClientRect().height+24:0});
   }
-  function follow(zoomIn=true){following=true;zoomNext=zoomIn;lastCenter='';if(origin){center(zoomIn);zoomNext=false;}buttons();}
+  function follow(zoomIn=true){following=true;zoomNext=zoomIn;lastCenter='';if(origin){center(zoomIn);zoomNext=false;}syncMapRotation();buttons();}
   const sensors=root.TGSNavigationSensors.createSensors(value=>{
     reading=value;
     const mapId=target?.map||(campus?'campus':config.mapId()),c=calibrationFor(mapId);
@@ -73,6 +87,7 @@ function create(config){
       else recalculate();
     }
     if(following&&origin&&!outsideVenue){center(zoomNext);zoomNext=false;}
+    syncMapRotation();
     buttons();renderSoon();
   });
   function describeBooth(b){
@@ -96,20 +111,20 @@ function create(config){
     if(origin?.mapId!==next.map)origin=null;
     const c=calibrationFor(next.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(next.map),i=N.cellAt(g,p);outsideVenue=i<0||(i>=0&&!g.allowed[i]);origin={mapId:next.map,...p,manual:false};}
     status(origin?'통로를 따라 경로를 찾고 있어요.':'이 도면에서 내 위치를 먼저 맞춰 주세요.');
-    controls();if(origin){center(true);zoomNext=false;}recalculate();buttons();renderSoon();$('nav-stop').focus?.({preventScroll:true});
+    controls();if(origin){center(true);zoomNext=false;}syncMapRotation();recalculate();buttons();renderSoon();$('nav-stop').focus?.({preventScroll:true});
   }
   function toggleBooth(id){const b=booths.get(id);if(b)startTarget(b,describeBooth);}
   function toggleFacility(id){const f=facilities.get(id);if(f)startTarget(f,describeFacility);}
   function stop(){
     cancel();target=null;route=null;choosing=false;firstAnchor=null;lastOriginKey='';lastRouteOrigin=null;following=false;zoomNext=false;lastCenter='';collapsed=false;
     $('nav-card').hidden=true;edgeVisible(false);$('nav-pick-hint').hidden=true;
-    sensors.stop();origin=null;config.targetChanged(null);config.exit();buttons();renderSoon();
+    sensors.stop();origin=null;syncMapRotation(true);config.targetChanged(null);config.exit();buttons();renderSoon();
   }
   function beginPick(){
     if(choosing){choosing=false;buttons();return;}
     if(campus&&config.mapId()!=='campus')config.showCampus();
     if(!config.walkable.maps[config.mapId()]){config.announce('부스가 있는 전시관 지도에서 내 위치를 맞춰 주세요.');return;}
-    sensors.start();choosing=true;following=false;buttons();
+    sensors.start();choosing=true;following=false;syncMapRotation(true);buttons();
   }
   function choose(p){
     if(!choosing)return false;
@@ -177,7 +192,7 @@ function create(config){
     marker.style.display=p?'':'none';if(p)marker.setAttribute('transform',`translate(${p.x} ${p.y})`);
     const c=calibrationFor(config.mapId()),known=p&&c&&reading.heading!==null&&reading.heading!==undefined;
     $('nav-arrow').style.display=known?'':'none';$('nav-dot').style.display=known?'none':'';
-    if(known)$('nav-arrow').setAttribute('transform',`rotate(${N.headingOnMap(reading.heading,c)-(config.frameRotation?.()||0)})`);
+    if(known)$('nav-arrow').setAttribute('transform',`rotate(${N.headingOnMap(reading.heading,c)-(config.frameRotation?.()||0)+mapRotation})`);
     $('nav-position-label').textContent=origin?.manual?'맞춘 내 위치':'내 위치';
     const end=points.at(-1);$('nav-end').style.display=end?'':'none';if(end){$('nav-end').setAttribute('cx',end.x);$('nav-end').setAttribute('cy',end.y);}
     const restricted=route?.usesBridge&&N.campusRestricted();
@@ -209,14 +224,14 @@ function create(config){
   $('nav-reset').addEventListener('click',()=>{stop();calibrationByMap={};try{localStorage.removeItem(STORAGE);}catch{}config.announce('위치 추적을 멈추고 보정 정보를 지웠어요.');});
   $('nav-stop').addEventListener('click',stop);$('nav-locate').addEventListener('click',beginPick);$('location-button').addEventListener('click',()=>{if(reading.active){beginPick();return;}if(campus)config.showCampus();sensors.start();follow(true);config.announce('현재 위치를 확인합니다. 위치가 어긋나면 내 위치 맞추기를 눌러 주세요.');});
   $('nav-compass').addEventListener('click',()=>sensors.requestCompass());
-  $('nav-recenter').addEventListener('click',()=>{sensors.start();follow(true);});
-  $('nav-overview').addEventListener('click',()=>{following=false;buttons();fit();});
+  $('nav-recenter').addEventListener('click',()=>{sensors.start();follow(true);syncMapRotation();});
+  $('nav-overview').addEventListener('click',()=>{following=false;syncMapRotation(true);buttons();fit();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&target){e.preventDefault();stop();}});
   return {toggleBooth,toggleFacility,stop,choose,isChoosing:()=>choosing,isActive:()=>!!target,targetId:()=>target?.kind==='booth'?target.id:null,targetFacilityId:()=>target?.kind==='facility'?target.id:null,update:renderSoon,
-    interact:()=>{following=false;fitNext=false;buttons();},
+    interact:()=>{following=false;fitNext=false;syncMapRotation(true);buttons();},
     toggleControls:()=>{collapsed=!collapsed;controls();lastCenter='';if(following)center();renderSoon();},
     resize:()=>{lastCenter='';if(following)center(zoomNext);renderSoon();},
-    mapChanged:()=>{choosing=false;following=false;lastCenter='';if(firstAnchor?.mapId!==config.mapId())firstAnchor=null;buttons();renderSoon();}};
+    mapChanged:()=>{choosing=false;following=false;lastCenter='';syncMapRotation(true);if(firstAnchor?.mapId!==config.mapId())firstAnchor=null;buttons();renderSoon();}};
 }
 root.TGSMapNavigation={create};
 })(typeof window==='undefined'?globalThis:window);
