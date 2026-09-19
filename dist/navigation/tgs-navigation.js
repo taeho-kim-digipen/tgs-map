@@ -8,7 +8,7 @@ function create(config){
   const facilities=new Map(data.facilities.map(f=>{const p=campus?.facilityPlacements?.[f.id],x=p?.x??f.x,y=p?.y??f.y,map=p?'campus':f.map;return [f.id,{...f,...(p||{}),x,y,map,kind:'facility',bounds:[x-1.4,y-1.4,x+1.4,y+1.4]}];}));
   const grids=new Map(),sentMaps=new Set(),pending=new Map();
   const STORAGE='tgs2026-navigation-calibration-v1';
-  let calibrationByMap={},firstAnchor=null,origin=null,target=null,route=null,choosing=false,routeToken=0,worker=null,reading={},lastOriginKey='',fitNext=false,frame=0;
+  let calibrationByMap={},firstAnchor=null,origin=null,target=null,route=null,choosing=false,routeToken=0,worker=null,reading={},lastOriginKey='',lastRouteOrigin=null,fitNext=false,frame=0;
   let following=false,zoomNext=false,collapsed=false,lastCenter='',outsideVenue=false;
   // SVGElement.hidden is not a reflected property in Safari. Change the actual attribute.
   function edgeVisible(value){const el=$('nav-edge');if(value)el.removeAttribute('hidden');else el.setAttribute('hidden','');}
@@ -57,13 +57,19 @@ function create(config){
     reading=value;
     const mapId=target?.map||(campus?'campus':config.mapId()),c=calibrationFor(mapId);
     if(c&&value.fresh&&!choosing){
-      const p=N.locate(value.fix,c),g=grid(mapId),cell=N.cellAt(g,p);
+      const raw=N.locate(value.fix,c),g=grid(mapId),cell=N.cellAt(g,raw);
+      // Smooth small GPS jumps so the map/marker does not flash or shake while walking.
+      let p=raw;
+      if(origin&&origin.mapId===mapId&&!origin.manual){
+        const jump=Math.hypot(raw.x-origin.x,raw.y-origin.y),softLimit=Math.max(4,(c.unitsPerMeter||1)*10);
+        if(jump<softLimit){const alpha=.38;p={x:origin.x+(raw.x-origin.x)*alpha,y:origin.y+(raw.y-origin.y)*alpha};}
+      }
       // Never clamp a remote GPS fix onto a hall or snap it across a booth.
       outsideVenue=cell<0||(cell>=0&&!g.allowed[cell]);
       origin={mapId,...p,manual:false};
     }else if(origin&&!origin.manual&&!value.fresh)origin=null;
     if(target){
-      if(!origin||origin.mapId!==target.map){cancel();route=null;lastOriginKey='';status(value.status==='denied'?'위치 권한이 꺼져 있어요. 내 위치를 직접 맞춰 주세요.':outsideVenue?'멧세 밖의 위치예요. 지도에서 내 위치를 맞출 수 있어요.':c?'현재 위치를 확인 중이에요. 통로에서 위치를 맞출 수 있어요.':'이 도면에서 내 위치를 먼저 맞춰 주세요.');}
+      if(!origin||origin.mapId!==target.map){cancel();route=null;lastOriginKey='';lastRouteOrigin=null;status(value.status==='denied'?'위치 권한이 꺼져 있어요. 내 위치를 직접 맞춰 주세요.':outsideVenue?'멧세 밖의 위치예요. 지도에서 내 위치를 맞출 수 있어요.':c?'현재 위치를 확인 중이에요. 통로에서 위치를 맞출 수 있어요.':'이 도면에서 내 위치를 먼저 맞춰 주세요.');}
       else recalculate();
     }
     if(following&&origin&&!outsideVenue){center(zoomNext);zoomNext=false;}
@@ -85,7 +91,7 @@ function create(config){
   }
   function startTarget(next,describe){
     if(target?.id===next.id&&target?.kind===next.kind){stop();return;}
-    sensors.start();cancel();route=null;lastOriginKey='';target=next;choosing=false;fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
+    sensors.start();cancel();route=null;lastOriginKey='';lastRouteOrigin=null;target=next;choosing=false;fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
     config.enter(next.map);following=true;describe(next);$('nav-card').hidden=false;config.targetChanged(next.kind==='booth'?next.id:null);
     if(origin?.mapId!==next.map)origin=null;
     const c=calibrationFor(next.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(next.map),i=N.cellAt(g,p);outsideVenue=i<0||(i>=0&&!g.allowed[i]);origin={mapId:next.map,...p,manual:false};}
@@ -95,7 +101,7 @@ function create(config){
   function toggleBooth(id){const b=booths.get(id);if(b)startTarget(b,describeBooth);}
   function toggleFacility(id){const f=facilities.get(id);if(f)startTarget(f,describeFacility);}
   function stop(){
-    cancel();target=null;route=null;choosing=false;firstAnchor=null;lastOriginKey='';following=false;zoomNext=false;lastCenter='';collapsed=false;
+    cancel();target=null;route=null;choosing=false;firstAnchor=null;lastOriginKey='';lastRouteOrigin=null;following=false;zoomNext=false;lastCenter='';collapsed=false;
     $('nav-card').hidden=true;edgeVisible(false);$('nav-pick-hint').hidden=true;
     sensors.stop();origin=null;config.targetChanged(null);config.exit();buttons();renderSoon();
   }
@@ -109,7 +115,7 @@ function create(config){
     if(!choosing)return false;
     const mapId=config.mapId(),g=grid(mapId),i=N.cellAt(g,p);
     if(i<0||!g.allowed[i]){config.announce('부스 바깥의 통로를 눌러 주세요.');return true;}
-    const snapped=N.point(g,i);origin={mapId,...snapped,manual:true};choosing=false;lastOriginKey='';fitNext=false;
+    const snapped=N.point(g,i);origin={mapId,...snapped,manual:true};choosing=false;lastOriginKey='';lastRouteOrigin=null;fitNext=false;
     const builtin=maps.get(mapId)?.geo,atVenue=!builtin||reading.fix&&Math.hypot(...Object.values(N.project(reading.fix,builtin.origin)))<2000;
     const fix=atVenue&&reading.fresh&&reading.fix?.accuracy<=20?reading.fix:null;
     if(fix){
@@ -124,8 +130,13 @@ function create(config){
   }
   async function recalculate(){
     if(!target||!origin||origin.mapId!==target.map)return;
-    const g=grid(target.map),key=target.id+':'+N.cellAt(g,origin);if(key===lastOriginKey)return;
-    lastOriginKey=key;cancel();const token=routeToken,b=target,p={x:origin.x,y:origin.y};route=null;renderSoon();
+    const g=grid(target.map),cell=N.cellAt(g,origin),key=target.id+':'+cell,c=calibrationFor(target.map);
+    const minMove=Math.max(g.cell*4,(c?.unitsPerMeter||0)*1.8);
+    if(lastRouteOrigin&&lastRouteOrigin.mapId===origin.mapId&&lastRouteOrigin.targetId===target.id&&Math.hypot(origin.x-lastRouteOrigin.x,origin.y-lastRouteOrigin.y)<minMove)return;
+    if(key===lastOriginKey&&route)return;
+    lastOriginKey=key;lastRouteOrigin={mapId:origin.mapId,targetId:target.id,x:origin.x,y:origin.y};
+    cancel();const token=routeToken,b=target,p={x:origin.x,y:origin.y},previousRoute=route;
+    // Keep the previous route visible during recalculation. Clearing it here caused a visible blink on every GPS update.
     try{
       let result;
       try{result=await requestRoute(p,b);}catch(e){if(e.message!=='worker')throw e;result=await requestRoute(p,b);}
@@ -133,7 +144,12 @@ function create(config){
       route.usesBridge=target.map==='campus'&&route.line.some(p=>p.y>campus.bridgeBounds[1]&&p.y<campus.bridgeBounds[3]);
       status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':route.startSnapDistance>2?'실외 위치를 가까운 보행 경로에 연결해 안내 중입니다.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 통로 안내':target.kind==='facility'?'시설까지 통로를 따라 이동하세요.':'부스까지 통로를 따라 이동하세요.');
       if(fitNext){fitNext=false;fit();}renderSoon();
-    }catch(e){if(token!==routeToken)return;route=null;status(e.message==='off-path'||e.message==='outside'?'경로선을 만들 수 없는 위치예요. 화면 가장자리 방향 하이라이트를 따라 전시장 쪽으로 이동하세요.':'연결된 통로를 찾지 못했어요. 화면 가장자리 방향 하이라이트로 목적지 방향을 표시합니다.');renderSoon();}
+    }catch(e){
+      if(token!==routeToken)return;
+      route=previousRoute||null;
+      status(e.message==='off-path'||e.message==='outside'?'경로선을 새로 만들 수 없는 위치예요. 기존 경로와 화면 가장자리 방향 하이라이트를 유지합니다.':'연결된 통로를 다시 찾지 못했어요. 기존 경로와 방향 하이라이트를 유지합니다.');
+      renderSoon();
+    }
   }
   function fit(){if(!target)return;const pts=route?.line?.length?route.line:[{x:target.bounds[0],y:target.bounds[1]},{x:target.bounds[2],y:target.bounds[3]}];config.fit(pts,target.bounds,$('nav-card').getBoundingClientRect().height+24);}
   function renderSoon(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;render();});}
