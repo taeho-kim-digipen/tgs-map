@@ -3,8 +3,8 @@
 'use strict';
 function createSensors(onChange,env=root){
   const N=root.TGSNavigation,doc=env.document,nav=env.navigator;
-  let active=false,watch=null,generation=0,timer=null,fix=null,heading=null,headingTime=0,lastFixTime=0,status='idle',permission='prompt';
-  function snapshot(){const now=Date.now();return {active,fix,heading:heading!==null&&now-headingTime<5000&&!doc.hidden?heading:null,fresh:!!fix&&now-fix.timestamp<30000&&fix.accuracy<=50&&!doc.hidden,status,permission};}
+  let active=false,watch=null,generation=0,timer=null,fix=null,filteredFix=null,heading=null,headingTime=0,lastFixTime=0,status='idle',permission='prompt';
+  function snapshot(){const now=Date.now();return {active,fix,heading:heading!==null&&now-headingTime<5000&&!doc.hidden?heading:null,fresh:!!fix&&now-fix.timestamp<45000&&fix.accuracy<=150&&!doc.hidden,status,permission};}
   function emit(){onChange(snapshot());}
   function clear(){generation++;if(watch!==null)nav.geolocation?.clearWatch(watch);watch=null;}
   function orientation(e){if(!active||doc.hidden)return;const h=N.compass(e,env.screen?.orientation?.angle??env.orientation??0);if(h===null)return;heading=heading===null?h:heading+(N.norm(h-heading+180)-180)*.25;headingTime=Date.now();emit();}
@@ -22,12 +22,21 @@ function createSensors(onChange,env=root){
     status='waiting';const token=generation;emit();
     try{watch=nav.geolocation.watchPosition(p=>{
       if(!active||generation!==token||!N.validFix(p)||p.timestamp<=lastFixTime)return;
-      lastFixTime=p.timestamp;fix={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,timestamp:p.timestamp};status=fix.accuracy>50?'weak':'tracking';emit();
+      lastFixTime=p.timestamp;
+      const raw={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,timestamp:p.timestamp};
+      if(filteredFix){
+        const delta=N.project(raw,filteredFix),distance=Math.hypot(delta.x,delta.y),age=Math.max(0,raw.timestamp-filteredFix.timestamp);
+        let alpha=raw.accuracy<=8?.72:raw.accuracy<=15?.56:raw.accuracy<=30?.38:raw.accuracy<=60?.24:.14;
+        if(raw.accuracy>filteredFix.accuracy*2.2&&age<7000)alpha*=.35;
+        if(distance>Math.max(14,raw.accuracy*1.6))alpha=Math.max(alpha,.78);
+        filteredFix={latitude:filteredFix.latitude+(raw.latitude-filteredFix.latitude)*alpha,longitude:filteredFix.longitude+(raw.longitude-filteredFix.longitude)*alpha,accuracy:raw.accuracy,timestamp:raw.timestamp};
+      }else filteredFix=raw;
+      fix={...filteredFix};status=fix.accuracy>35?'weak':'tracking';emit();
     },e=>{if(!active||generation!==token)return;status=e.code===1?'denied':'waiting';fix=null;emit();},{enableHighAccuracy:true,maximumAge:0,timeout:15000});}
     catch{status='unavailable';emit();}
   }
   function start(){const request=requestCompass();if(!active){active=true;lastFixTime=0;env.addEventListener('deviceorientation',orientation);env.addEventListener('deviceorientationabsolute',orientation);timer=env.setInterval(emit,1000);begin();}return request;}
-  function stop(){active=false;clear();env.clearInterval(timer);timer=null;fix=null;heading=null;headingTime=0;status='idle';env.removeEventListener('deviceorientation',orientation);env.removeEventListener('deviceorientationabsolute',orientation);emit();}
+  function stop(){active=false;clear();env.clearInterval(timer);timer=null;fix=null;filteredFix=null;heading=null;headingTime=0;status='idle';env.removeEventListener('deviceorientation',orientation);env.removeEventListener('deviceorientationabsolute',orientation);emit();}
   function visibility(){headingTime=0;if(active){if(doc.hidden){clear();status='paused';emit();}else begin();}}
   doc.addEventListener('visibilitychange',visibility);
   env.addEventListener('pagehide',clear);env.addEventListener('pageshow',()=>{if(active&&watch===null)begin();});
