@@ -60,6 +60,23 @@ transition_barrier=box(main_target[0]-2,main_edge_y-1.5,main_target[2]+2,OY-80.0
 stair_openings=unary_union([box(x-2.8,main_edge_y-3,x+2.8,OY-76.5) for x in main_stair_xs])
 blocked.append(transition_barrier.difference(stair_openings))
 for id in REG['walkingWayIds']:walk.append(LineString(ways[id]['points']).buffer(2.5))
+# Hybrid routing: TGS custom paths indoors, OpenStreetMap pedestrian network outdoors.
+# OSM ways are deliberately cut out of the two exhibition-hall envelopes so they
+# cannot overwrite the official indoor aisle model.
+hall911_indoor=box(*rect(transforms['halls911'],panels['halls911']['from']))
+indoor_exclusion=unary_union([box(*main_target),hall911_indoor]).buffer(.35)
+for w0 in ways.values():
+ t=w0['tags'];hw=t.get('highway');pts=w0['points']
+ eligible=hw in {'footway','pedestrian','steps','path','living_street'} or (hw=='service' and t.get('foot') in {'yes','designated','permissive'})
+ if not eligible or t.get('access') in {'private','no'} or t.get('foot')=='no' or len(pts)<2:continue
+ if t.get('area')=='yes' and len(pts)>=4:
+  geom=Polygon(pts)
+  if not geom.is_valid:geom=geom.buffer(0)
+ else:
+  width=2.2 if hw=='pedestrian' else 1.1 if hw=='steps' else 1.35
+  geom=LineString(pts).buffer(width)
+ geom=geom.difference(indoor_exclusion)
+ if not geom.is_empty:walk.append(geom)
 # 2F esplanade; deliberately separated from the 1F lobby except at the stair link.
 walk.append(box(OX-105,OY+116,OX-86.2,OY+318))
 stair=[(x+OX,y+OY)for x,y in REG['hall10Stairs']];walk.append(LineString(stair).buffer(2.5));stairs.append({'x':sum(p[0]for p in stair)/2,'y':stair[0][1],'label':'2F ↔ 1F'})
@@ -107,7 +124,9 @@ svg.append('<g id="redbull-outdoor-callout" pointer-events="none"><path d="M432.
 for p in stairs:svg.append(f'<g transform="translate({p["x"]} {p["y"]})"><rect x="-3" y="-3" width="6" height="6" rx="1" fill="#34675d"/><path d="M-2 2H-.6V.6H.7V-.7H2V-2" fill="none" stroke="white" stroke-width=".8"/></g>')
 svg.append('</svg>');(ROOT/'dist/campus.svg').write_text(''.join(svg))
 geo={'origin':{'latitude':G['latitude'],'longitude':G['longitude']},'x':OX,'y':OY,'a':ux,'b':-uy,'unitsPerMeter':1,'northAngle':math.degrees(math.atan2(-uy,ux))%360}
-campus={'id':'campus','width':W,'height':H,'image':'./campus.svg','maxScale':42,'floor':'마쿠하리 멧세 · 1–11홀 연결 지도','geo':geo,'registration':'approximate','sources':REG['sources'],'placements':placements,'stairs':stairs,'bridgeBounds':[OX-115,OY+24,OX-100,OY+114]}
+campus={'id':'campus','width':W,'height':H,'image':'./campus.svg','maxScale':42,'floor':'마쿠하리 멧세 · 1–11홀 연결 지도','geo':geo,'registration':'approximate','sources':REG['sources'],'placements':placements,'stairs':stairs,'bridgeBounds':[OX-115,OY+24,OX-100,OY+114],
+'indoorZones':[main_target,rect(transforms['halls911'],panels['halls911']['from'])],
+'routing':{'mode':'hybrid','indoor':'TGS 2026 custom exhibition walkable network','outdoor':'OpenStreetMap pedestrian/footway/steps network','outdoorSource':'sources/navigation/makuhari.osm'}}
 facility_placements={}
 for f in D['facilities']:
  if f['map']=='main':p=xy(main_transform,[f['x'],f['y']])
