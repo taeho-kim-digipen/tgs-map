@@ -75,3 +75,5 @@
 
 #nav-route-line.fallback{stroke-dasharray:11 8!important;opacity:.9}
 #nav-route-halo.fallback{stroke-dasharray:11 8!important;opacity:.82}
+
+#app.nav-picking #nav-pick-hint{background:#173b30f2;color:#fff;font-weight:800;box-shadow:0 5px 22px #0b201a38}
