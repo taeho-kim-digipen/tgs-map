@@ -6,7 +6,7 @@ function create(config){
   const maps=new Map(data.maps.map(m=>[m.id,m])),campus=maps.get('campus');
   const booths=new Map(data.booths.map(b=>[b.id,campus?.placements[b.id]?{...b,...campus.placements[b.id],map:'campus',kind:'booth'}:{...b,kind:'booth'}]));
   const facilities=new Map(data.facilities.map(f=>{const p=campus?.facilityPlacements?.[f.id],x=p?.x??f.x,y=p?.y??f.y,map=p?'campus':f.map;return [f.id,{...f,...(p||{}),x,y,map,kind:'facility',bounds:[x-1.4,y-1.4,x+1.4,y+1.4]}];}));
-  const grids=new Map(),sentMaps=new Set(),pending=new Map();
+  const grids=new Map(),sentMaps=new Set(),pending=new Map(),outdoorGraph=config.walkable.outdoorGraph||null;
   const STORAGE='tgs2026-navigation-calibration-v1';
   let calibrationByMap={},firstAnchor=null,origin=null,target=null,route=null,choosing=false,routeToken=0,worker=null,reading={},lastOriginKey='',lastRouteOrigin=null,fitNext=false,frame=0;
   let following=false,zoomNext=false,collapsed=false,lastCenter='',outsideVenue=false,mapRotation=0;
@@ -30,7 +30,7 @@ function create(config){
   try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved?.version===1)for(const [id,c] of Object.entries(saved.maps||{}))if(maps.has(id)&&validCalibration(c))calibrationByMap[id]=c;}catch{}
   function saveCalibration(){try{localStorage.setItem(STORAGE,JSON.stringify({version:1,maps:calibrationByMap}));}catch{config.announce('위치 보정은 현재 창에서만 유지됩니다.');}}
   const calibrationFor=id=>{const builtin=maps.get(id)?.geo,saved=calibrationByMap[id];if(saved&&builtin){const delta=N.project(saved.origin,builtin.origin);if(Math.hypot(delta.x,delta.y)>2000)return builtin;}return saved||builtin;};
-  function gridConfig(mapId){const m=maps.get(mapId),s=config.walkable.maps[mapId];if(!s)throw Error('unsupported-map');return {...s,width:m.width,height:m.height,obstacles:[...(s.obstacles||[]),...data.booths.filter(b=>b.map===mapId).map(b=>b.bounds)]};}
+  function gridConfig(mapId){const m=maps.get(mapId),s=config.walkable.maps[mapId];if(!s)throw Error('unsupported-map');return {...s,width:s.width||m.width,height:s.height||m.height,obstacles:[...(s.obstacles||[]),...data.booths.filter(b=>b.map===mapId).map(b=>b.bounds)]};}
   function grid(mapId){if(!grids.has(mapId))grids.set(mapId,N.makeGrid(gridConfig(mapId)));return grids.get(mapId);}
   function setupWorker(){
     if(!root.Worker)return;
@@ -39,8 +39,9 @@ function create(config){
   setupWorker();
   function cancel(){routeToken++;for(const p of pending.values())p.resolve(null);pending.clear();}
   function requestRoute(from,b){
-    const id=routeToken,g=grid(b.map),accuracy=reading.fix?.accuracy||20,startSnapRadius=b.map==='campus'?Math.min(65,Math.max(20,accuracy*1.35+8)):Math.max(g.cell*1.5,6);
-    if(!worker)return Promise.resolve().then(()=>id===routeToken?N.routeToBooth(grid(b.map),from,b.bounds,startSnapRadius):null);
+    const id=routeToken,g=grid(b.map),accuracy=reading.fix?.accuracy||20,startSnapRadius=b.map==='campus'?Math.min(80,Math.max(25,accuracy*1.5+10)):Math.max(g.cell*1.5,6);
+    if(b.map==='campus'&&outdoorGraph)return Promise.resolve().then(()=>id===routeToken?N.routeHybrid(g,outdoorGraph,from,b.bounds,startSnapRadius):null);
+    if(!worker)return Promise.resolve().then(()=>id===routeToken?N.routeToBooth(g,from,b.bounds,startSnapRadius):null);
     return new Promise((resolve,reject)=>{pending.set(id,{resolve,reject});const request={id,mapId:b.map,from,bounds:b.bounds,startSnapRadius};if(!sentMaps.has(b.map)){request.config=gridConfig(b.map);sentMaps.add(b.map);}worker.postMessage(request);});
   }
   function status(text){$('nav-status').textContent=text;}
@@ -64,9 +65,7 @@ function create(config){
     if(!origin||origin.mapId!==config.mapId()||choosing)return;
     const key=[origin.x,origin.y,config.mapId()].join(':');
     if(!zoomIn&&key===lastCenter)return;lastCenter=key;
-    let focus=origin;
-    if(outsideVenue&&target){try{const g=grid(origin.mapId),radius=Math.min(65,Math.max(20,(reading.fix?.accuracy||20)*1.35+8)),id=N.nearestAllowed(g,origin,radius);focus=N.point(g,id);}catch{}}
-    config.center(focus,{zoomIn,cardHeight:target?$('nav-card').getBoundingClientRect().height+24:0});
+    config.center(origin,{zoomIn,cardHeight:target?$('nav-card').getBoundingClientRect().height+24:0});
   }
   function follow(zoomIn=true){following=true;zoomNext=zoomIn;lastCenter='';if(origin){center(zoomIn);zoomNext=false;}syncMapRotation();buttons();}
   const sensors=root.TGSNavigationSensors.createSensors(value=>{
@@ -130,10 +129,9 @@ function create(config){
   }
   function choose(p){
     if(!choosing)return false;
-    const mapId=config.mapId(),g=grid(mapId);let i=N.cellAt(g,p),snappedToRoute=false;
-    if(i<0||!g.allowed[i]){try{i=N.nearestAllowed(g,p,45);snappedToRoute=true;}catch{config.announce('선택한 곳 근처에 실제/전시장 보행 경로가 없어요.');return true;}}
-    const snapped=N.point(g,i);origin={mapId,...snapped,manual:true};choosing=false;lastOriginKey='';lastRouteOrigin=null;fitNext=false;
-    if(snappedToRoute)config.announce('선택한 위치를 가장 가까운 보행 경로에 맞췄어요.');
+    const mapId=config.mapId(),g=grid(mapId),snapped={x:p.x,y:p.y};
+    origin={mapId,...snapped,manual:true};choosing=false;lastOriginKey='';lastRouteOrigin=null;fitNext=false;
+    config.announce('선택한 위치를 그대로 내 위치로 사용합니다. 경로 계산 시 가장 가까운 실제 보행로 또는 실내 통로에 연결합니다.');
     const builtin=maps.get(mapId)?.geo,atVenue=!builtin||reading.fix&&Math.hypot(...Object.values(N.project(reading.fix,builtin.origin)))<2000;
     const fix=atVenue&&reading.fresh&&reading.fix?.accuracy<=20?reading.fix:null;
     if(fix){
@@ -162,8 +160,8 @@ function create(config){
       route.usesBridge=target.map==='campus'&&route.line.some(p=>p.y>campus.bridgeBounds[1]&&p.y<campus.bridgeBounds[3]);
       const indoor=campus?.indoorZones||[],inside=p=>indoor.some(r=>p.x>=r[0]&&p.x<=r[2]&&p.y>=r[1]&&p.y<=r[3]);
       const startPoint=route.line[0]||origin,targetPoint={x:(target.bounds[0]+target.bounds[2])/2,y:(target.bounds[1]+target.bounds[3])/2};
-      route.startsOutdoor=target.map==='campus'&&!inside(startPoint);route.targetIndoor=target.map==='campus'&&inside(targetPoint);
-      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':route.startsOutdoor&&route.targetIndoor?'실외 OSM 보행로 → 전시장 입구 → 실내 전시장 경로로 안내합니다.':route.startsOutdoor?'실외 OpenStreetMap 보행로를 따라 안내합니다.':route.startSnapDistance>2?'GPS 위치를 가까운 보행 경로에 보정해 안내 중입니다.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 실내 통로 안내':target.kind==='facility'?'시설까지 실내 통로를 따라 이동하세요.':'부스까지 실내 통로를 따라 이동하세요.');
+      route.startsOutdoor=route.mode==='hybrid'||target.map==='campus'&&!inside(startPoint);route.targetIndoor=target.map==='campus'&&inside(targetPoint);
+      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':route.mode==='hybrid'?'실제 야외 보행로 → 전시장 연결점 → TGS 실내 경로로 안내합니다.':route.startsOutdoor&&route.targetIndoor?'실외 보행로에서 전시장 실내 경로로 연결합니다.':route.startSnapDistance>2?'현재 위치에서 가까운 경로로 연결해 안내 중입니다.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'지정한 내 위치에서 경로 안내 중입니다.':target.kind==='facility'?'시설까지 통로를 따라 이동하세요.':'부스까지 통로를 따라 이동하세요.');
       if(fitNext){fitNext=false;fit();}renderSoon();
     }catch(e){
       if(token!==routeToken)return;
