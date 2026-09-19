@@ -119,14 +119,7 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
       cost[next]=v;parent[next]=id;heap.push({id:next,f:v+heuristic(next)});
     }
   }
-  // The official walkable graph can contain gaps around outdoor queues or unmapped connectors.
-  // Never leave the user with no guidance: fall back to a clearly-marked direct guidance line.
-  let goal=-1,best=Infinity;for(const id of goals){const q=point(g,id),d=Math.hypot(q.x-startPoint.x,q.y-startPoint.y);if(d<best){best=d;goal=id;}}
-  if(goal<0)throw Error('no-path');
-  const goalPoint=point(g,goal),line=[rawStart];
-  if(Math.hypot(rawStart.x-startPoint.x,rawStart.y-startPoint.y)>g.cell)line.push(startPoint);
-  if(Math.hypot(line.at(-1).x-goalPoint.x,line.at(-1).y-goalPoint.y)>g.cell)line.push(goalPoint);
-  return {line,length:length(line),cellPath:[start,goal],startSnapDistance,fallback:'direct'};
+  throw Error('no-path');
 }
 const api={clamp,norm,length,validFix,compass,proximity,project,calibration,locate,headingOnMap,campusRestricted,makeGrid,point,cellAt,nearestAllowed,snap,visible,routeToBooth};
 if(typeof module!=='undefined')module.exports=api;root.TGSNavigation=api;
