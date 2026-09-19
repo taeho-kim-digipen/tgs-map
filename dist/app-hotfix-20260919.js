@@ -68,6 +68,7 @@
   let tx = 0, ty = 0, scale = 1, minScale = .1, maxScale = 20;
   let focused = null, toastTimer, frame = 0, holdTimer, gesture, lastTap, singleTapTimer;
   let navigation=null, beforeNavigation=null, controlsHidden=false;
+  let navMapRotation=0, navMapPivot=null;
   const pointers = new Map();
   let boothNodes = new Map();
   let scene, favoritePage=0;
@@ -478,13 +479,28 @@
     tx=mw<w?(w-mw)/2:clamp(tx,w-mw-45,45);
     ty=mh<h?(h-mh)/2:clamp(ty,h-mh-45,45);
   }
+  function mapToScreen(p){
+    const x=tx+p.x*scale,y=ty+p.y*scale;
+    if(!navMapPivot||Math.abs(navMapRotation)<.001)return {x,y};
+    const px=tx+navMapPivot.x*scale,py=ty+navMapPivot.y*scale,r=navMapRotation*Math.PI/180,c=Math.cos(r),s=Math.sin(r),dx=x-px,dy=y-py;
+    return {x:px+dx*c-dy*s,y:py+dx*s+dy*c};
+  }
+  function setNavigationMapRotation(angle,pivot){
+    const next=Number.isFinite(angle)?angle:0;
+    navMapRotation=next;
+    navMapPivot=pivot&&Number.isFinite(pivot.x)&&Number.isFinite(pivot.y)?{x:pivot.x,y:pivot.y}:null;
+    renderTransform();
+  }
   function renderTransform() {
     if(frame)return;
     frame=requestAnimationFrame(()=>{
       frame=0;
       const w=viewport.clientWidth,h=viewport.clientHeight,viewBox=`0 0 ${w} ${h}`;
       if(viewBox!==lastSvgViewport){svg.setAttribute('viewBox',viewBox);lastSvgViewport=viewBox;}
-      scene?.setAttribute('transform',`translate(${tx} ${ty}) scale(${scale})`);
+      if(scene){
+        if(navMapPivot&&Math.abs(navMapRotation)>.001){const px=tx+navMapPivot.x*scale,py=ty+navMapPivot.y*scale;scene.setAttribute('transform',`translate(${px} ${py}) rotate(${navMapRotation}) translate(${-px} ${-py}) translate(${tx} ${ty}) scale(${scale})`);}
+        else scene.setAttribute('transform',`translate(${tx} ${ty}) scale(${scale})`);
+      }
       renderLabels();renderFacilities();renderVisitMarkers();navigation?.update();
     });
   }
@@ -802,12 +818,13 @@
         const response=await fetch('./navigation/walkable.json');if(!response.ok)throw Error('navigation map');
         const walkable=await response.json(),campusGrid=await fetch('./navigation/campus-grid.json?v=2');if(!campusGrid.ok)throw Error('campus grid');walkable.maps.campus=await campusGrid.json();
         navigation=window.TGSMapNavigation.create({data,walkable,announce,mapId:()=>activeMap.id,showCampus:()=>selectView('campus'),
-          toScreen:p=>({x:tx+p.x*scale,y:ty+p.y*scale}),
+          toScreen:p=>mapToScreen(p),
+          setMapRotation:(angle,pivot)=>setNavigationMapRotation(angle,pivot),
           describeBooth:b=>{const v=visitOf(b);return [v.activities?.join(' · ')||'전시 내용 미확인',v.ticketNote||'정리권 정보 미확인',v.goods||'굿즈 정보 미확인',v.salesNote||'판매 정보 미확인',v.checkedAt?'공식 정보 확인: '+v.checkedAt:''].filter(Boolean).join('\n');},
           boothSources:b=>visitOf(b).sources||[{label:'공식 배치도',url:data.source}],
           targetChanged:()=>{updateSelection();renderFacilities();},
           enter:mapId=>{clearTimeout(singleTapTimer);lastTap=null;closeResults();closeDetail();$('booth-search').blur();if(!beforeNavigation)beforeNavigation={map:activeMap.id,view:activeView,tx,ty,scale};activeView=null;if(activeMap.id!==mapId)setMap(mapId);$('app').classList.add('navigation-active');},
-          exit:()=>{$('app').classList.remove('navigation-active','nav-controls-hidden');$('map-controls-toggle').setAttribute('aria-label',controlsHidden?'하단 메뉴 펼치기':'하단 메뉴 숨기기');$('map-controls-toggle').setAttribute('aria-expanded',String(!controlsHidden));const saved=beforeNavigation;beforeNavigation=null;requestAnimationFrame(()=>{if(saved&&activeMap.id===saved.map){activeView=saved.view;tx=saved.tx;ty=saved.ty;scale=saved.scale;constrain();renderTransform();}else selectView(data.views.find(v=>v.map===activeMap.id).id);});},
+          exit:()=>{setNavigationMapRotation(0,null);$('app').classList.remove('navigation-active','nav-controls-hidden');$('map-controls-toggle').setAttribute('aria-label',controlsHidden?'하단 메뉴 펼치기':'하단 메뉴 숨기기');$('map-controls-toggle').setAttribute('aria-expanded',String(!controlsHidden));const saved=beforeNavigation;beforeNavigation=null;requestAnimationFrame(()=>{if(saved&&activeMap.id===saved.map){activeView=saved.view;tx=saved.tx;ty=saved.ty;scale=saved.scale;constrain();renderTransform();}else selectView(data.views.find(v=>v.map===activeMap.id).id);});},
           center:(p,{zoomIn=false,cardHeight=0}={})=>{
             const w=viewport.clientWidth,h=viewport.clientHeight,side=$('app').dataset.mode!=='portrait';
             const freeW=side?Math.max(w*.5,w-390):w,freeH=side?h:Math.max(h*.4,h-cardHeight);
