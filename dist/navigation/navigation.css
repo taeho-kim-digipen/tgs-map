@@ -72,3 +72,6 @@
 #app:not([data-mode=pc]) .facility-nav{padding-top:3px;padding-bottom:0}
 @media(prefers-reduced-motion:reduce){#map-controls-toggle svg{transition:none}}
 #app:not(.navigation-active) #campus-credit{max-width:calc(50% - 40px);text-align:right;line-height:1.25}
+
+#nav-route-line.fallback{stroke-dasharray:11 8!important;opacity:.9}
+#nav-route-halo.fallback{stroke-dasharray:11 8!important;opacity:.82}
