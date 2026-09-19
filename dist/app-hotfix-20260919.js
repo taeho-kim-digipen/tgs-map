@@ -525,6 +525,7 @@
     svg.replaceChildren();boothNodes=new Map();
     scene=svgEl('g',{'data-scene':'map'});svg.append(scene);
     scene.append(svgEl('rect',{x:0,y:0,width:activeMap.width,height:activeMap.height,fill:'white','pointer-events':'none'}));
+    scene.append(svgEl('rect',{x:0,y:0,width:activeMap.width,height:activeMap.height,class:'map-surface',fill:'transparent','pointer-events':'all','data-map-surface':'true'}));
     const base=document.importNode(vectorMaps.get(mapId),true);
     base.setAttribute('x','0');base.setAttribute('y','0');
     base.setAttribute('width',activeMap.width);base.setAttribute('height',activeMap.height);
@@ -756,7 +757,7 @@
       }
       visitBooths=data.booths.filter(b=>data.details.booths[b.id]);
 
-      const campusResponse=await fetch('./navigation/campus.json?v=2');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
+      const campusResponse=await fetch('./navigation/campus.json?v=5');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
       data.maps.push(campus);data.views.unshift({id:'campus',label:'멧세 전체',map:'campus',bounds:[0,0,campus.width,campus.height]});
       for(const b of data.booths){b.campus=campus.placements[b.id];if(b.campus)b.campusGeometry={...b,...b.campus,map:'campus',sourceMap:b.campus.sourceMap||b.map};}
       for(const f of data.facilities){f.campus=campus.facilityPlacements[f.id];if(f.campus)f.campusGeometry={...f,...f.campus,map:'campus',sourceMap:f.map};}
@@ -816,7 +817,7 @@
       try{
       if(window.TGSMapNavigation&&window.TGSNavigation&&window.TGSNavigationSensors){
         const response=await fetch('./navigation/walkable.json');if(!response.ok)throw Error('navigation map');
-        const walkable=await response.json(),[campusGrid,outdoorResponse]=await Promise.all([fetch('./navigation/campus-grid.json?v=4'),fetch('./navigation/outdoor-graph.json?v=1')]);if(!campusGrid.ok)throw Error('campus grid');if(!outdoorResponse.ok)throw Error('outdoor graph');walkable.maps.campus=await campusGrid.json();walkable.outdoorGraph=await outdoorResponse.json();
+        const walkable=await response.json(),[campusGrid,outdoorResponse]=await Promise.all([fetch('./navigation/campus-grid.json?v=4'),fetch('./navigation/outdoor-graph.json?v=3')]);if(!campusGrid.ok)throw Error('campus grid');if(!outdoorResponse.ok)throw Error('outdoor graph');walkable.maps.campus=await campusGrid.json();walkable.outdoorGraph=await outdoorResponse.json();
         navigation=window.TGSMapNavigation.create({data,walkable,announce,mapId:()=>activeMap.id,showCampus:()=>selectView('campus'),
           toScreen:p=>mapToScreen(p),
           setMapRotation:(angle,pivot)=>setNavigationMapRotation(angle,pivot),
