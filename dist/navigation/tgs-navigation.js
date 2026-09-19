@@ -25,9 +25,9 @@ function create(config){
   setupWorker();
   function cancel(){routeToken++;for(const p of pending.values())p.resolve(null);pending.clear();}
   function requestRoute(from,b){
-    const id=routeToken;
-    if(!worker)return Promise.resolve().then(()=>id===routeToken?N.routeToBooth(grid(b.map),from,b.bounds):null);
-    return new Promise((resolve,reject)=>{pending.set(id,{resolve,reject});const request={id,mapId:b.map,from,bounds:b.bounds};if(!sentMaps.has(b.map)){request.config=gridConfig(b.map);sentMaps.add(b.map);}worker.postMessage(request);});
+    const id=routeToken,startSnapRadius=b.map==='campus'?18:undefined;
+    if(!worker)return Promise.resolve().then(()=>id===routeToken?N.routeToBooth(grid(b.map),from,b.bounds,startSnapRadius):null);
+    return new Promise((resolve,reject)=>{pending.set(id,{resolve,reject});const request={id,mapId:b.map,from,bounds:b.bounds,startSnapRadius};if(!sentMaps.has(b.map)){request.config=gridConfig(b.map);sentMaps.add(b.map);}worker.postMessage(request);});
   }
   function status(text){$('nav-status').textContent=text;}
   function buttons(){
@@ -59,15 +59,14 @@ function create(config){
     if(c&&value.fresh&&!choosing){
       const p=N.locate(value.fix,c),g=grid(mapId),cell=N.cellAt(g,p);
       // Never clamp a remote GPS fix onto a hall or snap it across a booth.
-      outsideVenue=cell<0;
-      if(cell>=0)origin={mapId,...p,manual:false};
-      else if(origin&&!origin.manual)origin=null;
+      outsideVenue=cell<0||(cell>=0&&!g.allowed[cell]);
+      origin={mapId,...p,manual:false};
     }else if(origin&&!origin.manual&&!value.fresh)origin=null;
     if(target){
       if(!origin||origin.mapId!==target.map){cancel();route=null;lastOriginKey='';status(value.status==='denied'?'위치 권한이 꺼져 있어요. 내 위치를 직접 맞춰 주세요.':outsideVenue?'멧세 밖의 위치예요. 지도에서 내 위치를 맞출 수 있어요.':c?'현재 위치를 확인 중이에요. 통로에서 위치를 맞출 수 있어요.':'이 도면에서 내 위치를 먼저 맞춰 주세요.');}
       else recalculate();
     }
-    if(following&&origin){center(zoomNext);zoomNext=false;}
+    if(following&&origin&&!outsideVenue){center(zoomNext);zoomNext=false;}
     buttons();renderSoon();
   });
   function describeBooth(b){
@@ -89,7 +88,7 @@ function create(config){
     sensors.start();cancel();route=null;lastOriginKey='';target=next;choosing=false;fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
     config.enter(next.map);following=true;describe(next);$('nav-card').hidden=false;config.targetChanged(next.kind==='booth'?next.id:null);
     if(origin?.mapId!==next.map)origin=null;
-    const c=calibrationFor(next.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(next.map),i=N.cellAt(g,p);if(i>=0)origin={mapId:next.map,...p,manual:false};}
+    const c=calibrationFor(next.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(next.map),i=N.cellAt(g,p);outsideVenue=i<0||(i>=0&&!g.allowed[i]);origin={mapId:next.map,...p,manual:false};}
     status(origin?'통로를 따라 경로를 찾고 있어요.':'이 도면에서 내 위치를 먼저 맞춰 주세요.');
     controls();if(origin){center(true);zoomNext=false;}recalculate();buttons();renderSoon();$('nav-stop').focus?.({preventScroll:true});
   }
@@ -132,9 +131,9 @@ function create(config){
       try{result=await requestRoute(p,b);}catch(e){if(e.message!=='worker')throw e;result=await requestRoute(p,b);}
       if(token!==routeToken||!target||!result)return;route=result;
       route.usesBridge=target.map==='campus'&&route.line.some(p=>p.y>campus.bridgeBounds[1]&&p.y<campus.bridgeBounds[3]);
-      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 통로 안내':target.kind==='facility'?'시설까지 통로를 따라 이동하세요.':'부스까지 통로를 따라 이동하세요.');
+      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':route.startSnapDistance>2?'실외 위치를 가까운 보행 경로에 연결해 안내 중입니다.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 통로 안내':target.kind==='facility'?'시설까지 통로를 따라 이동하세요.':'부스까지 통로를 따라 이동하세요.');
       if(fitNext){fitNext=false;fit();}renderSoon();
-    }catch(e){if(token!==routeToken)return;route=null;status(e.message==='off-path'?'통로에서 내 위치를 다시 맞춰 주세요.':'연결된 통로를 찾지 못했어요. 내 위치를 다시 맞춰 주세요.');renderSoon();}
+    }catch(e){if(token!==routeToken)return;route=null;status(e.message==='off-path'||e.message==='outside'?'경로선을 만들 수 없는 위치예요. 화면 가장자리 방향 하이라이트를 따라 전시장 쪽으로 이동하세요.':'연결된 통로를 찾지 못했어요. 화면 가장자리 방향 하이라이트로 목적지 방향을 표시합니다.');renderSoon();}
   }
   function fit(){if(!target)return;const pts=route?.line?.length?route.line:[{x:target.bounds[0],y:target.bounds[1]},{x:target.bounds[2],y:target.bounds[3]}];config.fit(pts,target.bounds,$('nav-card').getBoundingClientRect().height+24);}
   function renderSoon(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;render();});}
@@ -169,11 +168,13 @@ function create(config){
     $('nav-route-line').classList.toggle('restricted',!!restricted);
     if(restricted)status('일반공개일 홀 사이 이동은 10시부터 가능해요.');
     else if(route?.usesBridge)status('2F 연결교 이용 · 표시된 계단으로 이동하세요.');
-    const showEdge=!!target&&!!route&&!!p&&!document.hidden&&!restricted;
+    const showEdge=!!target&&!!p&&!document.hidden&&!restricted;
     edgeVisible(showEdge);if(!showEdge)return;
-    const map=maps.get(target.map),remaining=c?route.length/c.unitsPerMeter:route.length;
+    const map=maps.get(target.map),targetPoint={x:(target.bounds[0]+target.bounds[2])/2,y:(target.bounds[1]+target.bounds[3])/2};
+    const direct=Math.hypot(targetPoint.x-origin.x,targetPoint.y-origin.y);
+    const routeUnits=route?.length??direct,remaining=c?routeUnits/c.unitsPerMeter:routeUnits;
     const thresholds=c?undefined:{far:Math.min(map.width,map.height)*.65,near:Math.min(map.width,map.height)*.10,arrival:Math.min(map.width,map.height)*.025};
-    const state=N.proximity(remaining,thresholds),aim=config.toScreen({x:(target.bounds[0]+target.bounds[2])/2,y:(target.bounds[1]+target.bounds[3])/2});
+    const state=N.proximity(remaining,thresholds),aim=config.toScreen(targetPoint);
     drawEdge(state,aim.x-p.x,aim.y-p.y);$('nav-card').style.setProperty('--nav-signal',state.color);
   }
   function drawEdge(state,dx,dy){
