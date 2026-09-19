@@ -39,7 +39,7 @@ function create(config){
   setupWorker();
   function cancel(){routeToken++;for(const p of pending.values())p.resolve(null);pending.clear();}
   function requestRoute(from,b){
-    const id=routeToken,g=grid(b.map),startSnapRadius=Math.hypot(g.width,g.height);
+    const id=routeToken,g=grid(b.map),accuracy=reading.fix?.accuracy||20,startSnapRadius=b.map==='campus'?Math.min(65,Math.max(20,accuracy*1.35+8)):Math.max(g.cell*1.5,6);
     if(!worker)return Promise.resolve().then(()=>id===routeToken?N.routeToBooth(grid(b.map),from,b.bounds,startSnapRadius):null);
     return new Promise((resolve,reject)=>{pending.set(id,{resolve,reject});const request={id,mapId:b.map,from,bounds:b.bounds,startSnapRadius};if(!sentMaps.has(b.map)){request.config=gridConfig(b.map);sentMaps.add(b.map);}worker.postMessage(request);});
   }
@@ -65,7 +65,7 @@ function create(config){
     const key=[origin.x,origin.y,config.mapId()].join(':');
     if(!zoomIn&&key===lastCenter)return;lastCenter=key;
     let focus=origin;
-    if(outsideVenue&&target){try{const g=grid(origin.mapId),id=N.nearestAllowed(g,origin,Math.hypot(g.width,g.height));focus=N.point(g,id);}catch{}}
+    if(outsideVenue&&target){try{const g=grid(origin.mapId),radius=Math.min(65,Math.max(20,(reading.fix?.accuracy||20)*1.35+8)),id=N.nearestAllowed(g,origin,radius);focus=N.point(g,id);}catch{}}
     config.center(focus,{zoomIn,cardHeight:target?$('nav-card').getBoundingClientRect().height+24:0});
   }
   function follow(zoomIn=true){following=true;zoomNext=zoomIn;lastCenter='';if(origin){center(zoomIn);zoomNext=false;}syncMapRotation();buttons();}
@@ -131,7 +131,7 @@ function create(config){
   function choose(p){
     if(!choosing)return false;
     const mapId=config.mapId(),g=grid(mapId);let i=N.cellAt(g,p),snappedToRoute=false;
-    if(i<0||!g.allowed[i]){try{i=N.nearestAllowed(g,p,Math.hypot(g.width,g.height));snappedToRoute=true;}catch{config.announce('이 지도에서 가까운 경로를 찾지 못했어요.');return true;}}
+    if(i<0||!g.allowed[i]){try{i=N.nearestAllowed(g,p,45);snappedToRoute=true;}catch{config.announce('선택한 곳 근처에 실제/전시장 보행 경로가 없어요.');return true;}}
     const snapped=N.point(g,i);origin={mapId,...snapped,manual:true};choosing=false;lastOriginKey='';lastRouteOrigin=null;fitNext=false;
     if(snappedToRoute)config.announce('선택한 위치를 가장 가까운 보행 경로에 맞췄어요.');
     const builtin=maps.get(mapId)?.geo,atVenue=!builtin||reading.fix&&Math.hypot(...Object.values(N.project(reading.fix,builtin.origin)))<2000;
@@ -159,13 +159,16 @@ function create(config){
       let result;
       try{result=await requestRoute(p,b);}catch(e){if(e.message!=='worker')throw e;result=await requestRoute(p,b);}
       if(token!==routeToken||!target||!result)return;route=result;
-      route.usesBridge=!route.fallback&&target.map==='campus'&&route.line.some(p=>p.y>campus.bridgeBounds[1]&&p.y<campus.bridgeBounds[3]);
-      status(route.fallback==='direct'?'공식 통로 데이터가 끊긴 구역이라 점선 직선 안내 + 방향 하이라이트를 표시합니다.':route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':route.startSnapDistance>2?'현재 위치를 가장 가까운 보행 경로에 연결해 안내 중입니다.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 통로 안내':target.kind==='facility'?'시설까지 통로를 따라 이동하세요.':'부스까지 통로를 따라 이동하세요.');
+      route.usesBridge=target.map==='campus'&&route.line.some(p=>p.y>campus.bridgeBounds[1]&&p.y<campus.bridgeBounds[3]);
+      const indoor=campus?.indoorZones||[],inside=p=>indoor.some(r=>p.x>=r[0]&&p.x<=r[2]&&p.y>=r[1]&&p.y<=r[3]);
+      const startPoint=route.line[0]||origin,targetPoint={x:(target.bounds[0]+target.bounds[2])/2,y:(target.bounds[1]+target.bounds[3])/2};
+      route.startsOutdoor=target.map==='campus'&&!inside(startPoint);route.targetIndoor=target.map==='campus'&&inside(targetPoint);
+      status(route.usesBridge?'2F 연결교 이용 · 표시된 계단으로 이동하세요.':route.startsOutdoor&&route.targetIndoor?'실외 OSM 보행로 → 전시장 입구 → 실내 전시장 경로로 안내합니다.':route.startsOutdoor?'실외 OpenStreetMap 보행로를 따라 안내합니다.':route.startSnapDistance>2?'GPS 위치를 가까운 보행 경로에 보정해 안내 중입니다.':target.floor===2?'목적지는 2F · 에스플러네이드입니다.':origin.manual?'직접 맞춘 내 위치 · 실내 통로 안내':target.kind==='facility'?'시설까지 실내 통로를 따라 이동하세요.':'부스까지 실내 통로를 따라 이동하세요.');
       if(fitNext){fitNext=false;fit();}renderSoon();
     }catch(e){
       if(token!==routeToken)return;
       route=previousRoute||null;
-      status(e.message==='off-path'||e.message==='outside'?'경로선을 새로 만들 수 없는 위치예요. 기존 경로와 화면 가장자리 방향 하이라이트를 유지합니다.':'연결된 통로를 다시 찾지 못했어요. 기존 경로와 방향 하이라이트를 유지합니다.');
+      status(e.message==='off-path'||e.message==='outside'?'가까운 실제 보행로를 찾지 못했어요. 경로선 대신 방향 하이라이트를 유지합니다.':'실외 OSM 보행로와 실내 전시장 경로가 연결되지 않았어요. 기존 경로/방향 하이라이트를 유지합니다.');
       renderSoon();
     }
   }
