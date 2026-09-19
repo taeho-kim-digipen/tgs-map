@@ -41,10 +41,10 @@ class Heap{
   push(v){const a=this.items;let i=a.length;a.push(v);while(i){const p=(i-1)>>1;if(a[p].f<=v.f)break;a[i]=a[p];i=p;}a[i]=v;}
   pop(){const a=this.items,r=a[0],v=a.pop();if(a.length){let i=0;while(i*2+1<a.length){let c=i*2+1;if(c+1<a.length&&a[c+1].f<a[c].f)c++;if(a[c].f>=v.f)break;a[i]=a[c];i=c;}a[i]=v;}return r;}
 }
-function makeGrid({width,height,cell=.5,walkable=[],obstacles=[],clearance=.15,bits}){
+function makeGrid({width,height,cell=.5,walkable=[],obstacles=[],clearance=.15,bits,originX=0,originY=0}){
   const w=Math.ceil(width/cell),h=Math.ceil(height/cell),allowed=new Uint8Array(w*h);
   if(w*h>8000000)throw Error('grid-too-large');
-  if(bits){const raw=typeof atob==='function'?atob(bits):Buffer.from(bits,'base64').toString('binary');if(raw.length!==Math.ceil(w*h/8))throw Error('invalid-mask');for(let i=0;i<allowed.length;i++)allowed[i]=(raw.charCodeAt(i>>3)>>(i&7))&1;return {w,h,cell,allowed,clearance,width,height};}
+  if(bits){const raw=typeof atob==='function'?atob(bits):Buffer.from(bits,'base64').toString('binary');if(raw.length!==Math.ceil(w*h/8))throw Error('invalid-mask');for(let i=0;i<allowed.length;i++)allowed[i]=(raw.charCodeAt(i>>3)>>(i&7))&1;return {w,h,cell,allowed,clearance,width,height,originX,originY};}
   function fill(r,value,inside){
     const margin=inside?0:clearance;
     const x0=Math.max(0,inside?Math.ceil(r[0]/cell):Math.floor((r[0]-margin)/cell));
@@ -54,14 +54,14 @@ function makeGrid({width,height,cell=.5,walkable=[],obstacles=[],clearance=.15,b
     for(let y=y0;y<y1;y++)allowed.fill(value,y*w+x0,y*w+x1);
   }
   walkable.forEach(r=>fill(r,1,true));obstacles.forEach(r=>fill(r,0,false));
-  return {w,h,cell,allowed,clearance,width,height};
+  return {w,h,cell,allowed,clearance,width,height,originX,originY};
 }
-const point=(g,id)=>({x:(id%g.w+.5)*g.cell,y:(Math.floor(id/g.w)+.5)*g.cell});
-function cellAt(g,p){if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.y<0||p.x>=g.width||p.y>=g.height)return -1;return Math.floor(p.y/g.cell)*g.w+Math.floor(p.x/g.cell);}
+const point=(g,id)=>({x:g.originX+(id%g.w+.5)*g.cell,y:g.originY+(Math.floor(id/g.w)+.5)*g.cell});
+function cellAt(g,p){if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<g.originX||p.y<g.originY||p.x>=g.originX+g.width||p.y>=g.originY+g.height)return -1;return Math.floor((p.y-g.originY)/g.cell)*g.w+Math.floor((p.x-g.originX)/g.cell);}
 function nearestAllowed(g,p,radius=Infinity){
   if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))throw Error('outside');
-  const cx=clamp(Math.floor(clamp(p.x,0,Math.max(0,g.width-1e-9))/g.cell),0,g.w-1);
-  const cy=clamp(Math.floor(clamp(p.y,0,Math.max(0,g.height-1e-9))/g.cell),0,g.h-1);
+  const cx=clamp(Math.floor((clamp(p.x,g.originX,Math.max(g.originX,g.originX+g.width-1e-9))-g.originX)/g.cell),0,g.w-1);
+  const cy=clamp(Math.floor((clamp(p.y,g.originY,Math.max(g.originY,g.originY+g.height-1e-9))-g.originY)/g.cell),0,g.h-1);
   const center=cy*g.w+cx;if(g.allowed[center])return center;
   const maxCells=Number.isFinite(radius)?Math.max(0,Math.ceil(radius/g.cell)):Math.max(g.w,g.h);
   let best=-1,bestDistance=Infinity;
@@ -90,7 +90,7 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
   // The destination is a set of free cells OUTSIDE the booth, never its centre.
   const [x0,y0,x1,y1]=bounds,margin=g.clearance+g.cell*2,goals=new Set();
   const rectDistance=p=>Math.hypot(Math.max(x0-p.x,0,p.x-x1),Math.max(y0-p.y,0,p.y-y1));
-  for(let y=Math.max(0,Math.floor((y0-margin)/g.cell));y<Math.min(g.h,Math.ceil((y1+margin)/g.cell));y++)for(let x=Math.max(0,Math.floor((x0-margin)/g.cell));x<Math.min(g.w,Math.ceil((x1+margin)/g.cell));x++){
+  for(let y=Math.max(0,Math.floor((y0-margin-g.originY)/g.cell));y<Math.min(g.h,Math.ceil((y1+margin-g.originY)/g.cell));y++)for(let x=Math.max(0,Math.floor((x0-margin-g.originX)/g.cell));x<Math.min(g.w,Math.ceil((x1+margin-g.originX)/g.cell));x++){
     const id=y*g.w+x,p=point(g,id);if(g.allowed[id]&&rectDistance(p)>0&&rectDistance(p)<=margin)goals.add(id);
   }
   if(!goals.size){
@@ -98,7 +98,7 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
     goals.add(nearestAllowed(g,center,Math.hypot(g.width,g.height)));
   }
   const start=snap(g,from,Math.max(g.cell*1.5,startSnapRadius||0)),startPoint=point(g,start),startSnapDistance=Math.hypot(from.x-startPoint.x,from.y-startPoint.y),n=g.w*g.h,closed=new Uint8Array(n),cost=new Float64Array(n),parent=new Int32Array(n);cost.fill(Infinity);parent.fill(-1);
-  const rawStart={x:clamp(from.x,0,g.width),y:clamp(from.y,0,g.height)};
+  const rawStart={x:clamp(from.x,g.originX,g.originX+g.width),y:clamp(from.y,g.originY,g.originY+g.height)};
   const heuristic=id=>Math.max(0,rectDistance(point(g,id))-margin)/g.cell;
   const heap=new Heap();cost[start]=0;heap.push({id:start,f:heuristic(start)});
   const free=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&g.allowed[y*g.w+x];
@@ -121,6 +121,42 @@ function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
   }
   throw Error('no-path');
 }
-const api={clamp,norm,length,validFix,compass,proximity,project,calibration,locate,headingOnMap,campusRestricted,makeGrid,point,cellAt,nearestAllowed,snap,visible,routeToBooth};
+
+function prepareGraph(graph){
+  if(graph.__adj)return graph;
+  const adj=Array.from({length:graph.nodes.length},()=>[]);
+  for(const [a,b,w] of graph.edges){if(adj[a]&&adj[b]){adj[a].push([b,w]);adj[b].push([a,w]);}}
+  graph.__adj=adj;graph.__gatewayMap=new Map((graph.gateways||[]).map(g=>[g[0],g]));return graph;
+}
+function nearestGraphNode(graph,p,radius=80){
+  prepareGraph(graph);let best=-1,bd=radius;
+  for(let i=0;i<graph.nodes.length;i++){const q=graph.nodes[i],d=Math.hypot(p.x-q[0],p.y-q[1]);if(d<bd){bd=d;best=i;}}
+  if(best<0)throw Error('off-path');return {id:best,distance:bd};
+}
+function routeHybrid(g,graph,from,bounds,startSnapRadius=35){
+  try{return {...routeToBooth(g,from,bounds,startSnapRadius),mode:'venue'};}catch{}
+  graph=prepareGraph(graph);const startInfo=nearestGraphNode(graph,from,Math.max(45,startSnapRadius)),n=graph.nodes.length;
+  const cost=new Float64Array(n);cost.fill(Infinity);const parent=new Int32Array(n);parent.fill(-1),closed=new Uint8Array(n),heap=new Heap();cost[startInfo.id]=0;heap.push({id:startInfo.id,f:0});
+  const tried=new Set();
+  while(heap.items.length){
+    const cur=heap.pop(),id=cur.id;if(closed[id])continue;closed[id]=1;
+    const gate=graph.__gatewayMap.get(id);
+    if(gate&&!tried.has(id)){
+      tried.add(id);
+      try{
+        const indoor=routeToBooth(g,{x:gate[1],y:gate[2]},bounds,8),chain=[];for(let v=id;v!==-1;v=parent[v])chain.push(v);chain.reverse();
+        const line=[{x:from.x,y:from.y}],first=graph.nodes[startInfo.id];
+        if(Math.hypot(from.x-first[0],from.y-first[1])>.4)line.push({x:first[0],y:first[1]});
+        for(const v of chain.slice(1)){const q=graph.nodes[v];line.push({x:q[0],y:q[1]});}
+        const gatePoint={x:gate[1],y:gate[2]};if(Math.hypot(line.at(-1).x-gatePoint.x,line.at(-1).y-gatePoint.y)>.4)line.push(gatePoint);
+        for(const q of indoor.line.slice(1))line.push(q);
+        return {line,length:length(line),cellPath:indoor.cellPath,startSnapDistance:startInfo.distance,mode:'hybrid',outdoorLength:cost[id]};
+      }catch{}
+    }
+    for(const [next,w] of graph.__adj[id]){if(closed[next])continue;const v=cost[id]+w;if(v>=cost[next])continue;cost[next]=v;parent[next]=id;heap.push({id:next,f:v});}
+  }
+  throw Error('no-path');
+}
+const api={clamp,norm,length,validFix,compass,proximity,project,calibration,locate,headingOnMap,campusRestricted,makeGrid,point,cellAt,nearestAllowed,snap,visible,routeToBooth,prepareGraph,nearestGraphNode,routeHybrid};
 if(typeof module!=='undefined')module.exports=api;root.TGSNavigation=api;
 })(typeof window==='undefined'?globalThis:window);
