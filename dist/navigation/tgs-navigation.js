@@ -51,7 +51,7 @@ function create(config){
     if(!target&&!reading.active)$('location-button').textContent='◎ 내 위치';
     $('nav-compass').hidden=!target||reading.heading!==null&&reading.heading!==undefined;
     $('nav-pick-hint').hidden=!choosing;
-    $('nav-pick-hint').textContent=pendingAnchor?'다른 곳으로 이동한 뒤, 지금 서 있는 통로를 눌러 주세요.':'지금 서 있는 통로를 눌러 내 위치를 맞추세요.';
+    $('nav-pick-hint').textContent=pendingAnchor?'다른 곳으로 이동한 뒤 지도에서 현재 위치를 아무 곳이나 눌러 주세요.':'지도 위 아무 곳이나 눌러 내 위치를 지정하세요. 길 위가 아니어도 됩니다.';
     $('nav-recenter').textContent=following?'◎ 따라가는 중':'◎ 내 위치 따라가기';
     $('nav-recenter').setAttribute('aria-pressed',String(following));
     $('nav-compass').textContent=reading.permission==='denied'?'방향 권한 다시 요청':'내가 보는 방향으로';
@@ -107,7 +107,7 @@ function create(config){
   }
   function startTarget(next,describe){
     if(target?.id===next.id&&target?.kind===next.kind){stop();return;}
-    sensors.start();cancel();route=null;lastOriginKey='';lastRouteOrigin=null;target=next;choosing=false;fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
+    sensors.start();cancel();route=null;lastOriginKey='';lastRouteOrigin=null;target=next;choosing=false;$('app').classList.remove('nav-picking');fitNext=false;following=true;zoomNext=true;lastCenter='';collapsed=false;
     config.enter(next.map);following=true;describe(next);$('nav-card').hidden=false;config.targetChanged(next.kind==='booth'?next.id:null);
     if(origin?.mapId!==next.map)origin=null;
     const c=calibrationFor(next.map);if(c&&reading.fresh){const p=N.locate(reading.fix,c),g=grid(next.map),i=N.cellAt(g,p);outsideVenue=i<0||(i>=0&&!g.allowed[i]);origin={mapId:next.map,...p,manual:false};}
@@ -118,20 +118,20 @@ function create(config){
   function toggleFacility(id){const f=facilities.get(id);if(f)startTarget(f,describeFacility);}
   function stop(){
     cancel();target=null;route=null;choosing=false;firstAnchor=null;lastOriginKey='';lastRouteOrigin=null;following=false;zoomNext=false;lastCenter='';collapsed=false;
-    $('nav-card').hidden=true;edgeVisible(false);$('nav-pick-hint').hidden=true;
+    $('nav-card').hidden=true;edgeVisible(false);$('nav-pick-hint').hidden=true;$('app').classList.remove('nav-picking');
     sensors.stop();origin=null;syncMapRotation(true);config.targetChanged(null);config.exit();buttons();renderSoon();
   }
   function beginPick(){
-    if(choosing){choosing=false;buttons();return;}
+    if(choosing){choosing=false;$('app').classList.remove('nav-picking');buttons();return;}
     if(campus&&config.mapId()!=='campus')config.showCampus();
     if(!config.walkable.maps[config.mapId()]){config.announce('부스가 있는 전시관 지도에서 내 위치를 맞춰 주세요.');return;}
-    sensors.start();choosing=true;following=false;syncMapRotation(true);buttons();
+    sensors.start();choosing=true;following=false;$('app').classList.add('nav-picking');syncMapRotation(true);buttons();
   }
   function choose(p){
     if(!choosing)return false;
-    const mapId=config.mapId(),g=grid(mapId),snapped={x:p.x,y:p.y};
-    origin={mapId,...snapped,manual:true};choosing=false;lastOriginKey='';lastRouteOrigin=null;fitNext=false;
-    config.announce('선택한 위치를 그대로 내 위치로 사용합니다. 경로 계산 시 가장 가까운 실제 보행로 또는 실내 통로에 연결합니다.');
+    const mapId=config.mapId(),g=grid(mapId),m=maps.get(mapId),snapped={x:N.clamp(p.x,0,m.width),y:N.clamp(p.y,0,m.height)};
+    origin={mapId,...snapped,manual:true};choosing=false;$('app').classList.remove('nav-picking');lastOriginKey='';lastRouteOrigin=null;fitNext=false;
+    config.announce('선택한 지점을 그대로 내 위치로 지정했습니다. 길 위가 아니어도 되며, 경로선만 가장 가까운 실제 보행로/실내 통로에 연결됩니다.');
     const builtin=maps.get(mapId)?.geo,atVenue=!builtin||reading.fix&&Math.hypot(...Object.values(N.project(reading.fix,builtin.origin)))<2000;
     const fix=atVenue&&reading.fresh&&reading.fix?.accuracy<=20?reading.fix:null;
     if(fix){
