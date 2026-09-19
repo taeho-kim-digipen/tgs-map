@@ -72,7 +72,7 @@ function visible(g,first,last){
   let nextX=stepX/2,nextY=stepY/2;if(!free(x,y))return false;
   while(x!==ex||y!==ey){if(Math.abs(nextX-nextY)<1e-10){if(!free(x+sx,y)||!free(x,y+sy))return false;x+=sx;y+=sy;nextX+=stepX;nextY+=stepY;}else if(nextX<nextY){x+=sx;nextX+=stepX;}else{y+=sy;nextY+=stepY;}if(!free(x,y))return false;}return true;
 }
-function routeToBooth(g,from,bounds){
+function routeToBooth(g,from,bounds,startSnapRadius=g.cell*1.5){
   // The destination is a set of free cells OUTSIDE the booth, never its centre.
   const [x0,y0,x1,y1]=bounds,margin=g.clearance+g.cell*2,goals=new Set();
   const rectDistance=p=>Math.hypot(Math.max(x0-p.x,0,p.x-x1),Math.max(y0-p.y,0,p.y-y1));
@@ -80,7 +80,7 @@ function routeToBooth(g,from,bounds){
     const id=y*g.w+x,p=point(g,id);if(g.allowed[id]&&rectDistance(p)>0&&rectDistance(p)<=margin)goals.add(id);
   }
   if(!goals.size)throw Error('no-entrance');
-  const start=snap(g,from,g.cell*1.5),n=g.w*g.h,closed=new Uint8Array(n),cost=new Float64Array(n),parent=new Int32Array(n);cost.fill(Infinity);parent.fill(-1);
+  const start=snap(g,from,Math.max(g.cell*1.5,startSnapRadius||0)),startPoint=point(g,start),startSnapDistance=Math.hypot(from.x-startPoint.x,from.y-startPoint.y),n=g.w*g.h,closed=new Uint8Array(n),cost=new Float64Array(n),parent=new Int32Array(n);cost.fill(Infinity);parent.fill(-1);
   const heuristic=id=>Math.max(0,rectDistance(point(g,id))-margin)/g.cell;
   const heap=new Heap();cost[start]=0;heap.push({id:start,f:heuristic(start)});
   const free=(x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h&&g.allowed[y*g.w+x];
@@ -89,7 +89,7 @@ function routeToBooth(g,from,bounds){
     if(goals.has(id)){
       const chain=[];for(let i=id;i!==-1;i=parent[i])chain.push(i);chain.reverse();const reduced=[start];
       for(let i=0;i<chain.length-1;){let j=Math.min(chain.length-1,i+120);while(j>i+1&&!visible(g,chain[i],chain[j]))j--;reduced.push(chain[j]);i=j;}
-      const line=reduced.map(i=>point(g,i));return {line,length:length(line),cellPath:reduced};
+      const line=reduced.map(i=>point(g,i));return {line,length:length(line),cellPath:reduced,startSnapDistance};
     }
     const x=id%g.w,y=Math.floor(id/g.w);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
