@@ -1,6 +1,6 @@
 'use strict';
 // floor-aware-routing-2026-09-18
-const VERSION = '2026.09.19.10';
+const VERSION = '2026.09.19.11';
 const BASE = self.registration.scope;
 const PREFIX = 'tgs2026-travel:' + new URL(BASE).pathname + ':';
 const CACHE = PREFIX + VERSION;
