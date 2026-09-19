@@ -757,13 +757,13 @@
       visitBooths=data.booths.filter(b=>data.details.booths[b.id]);
 
       const campusResponse=await fetch('./navigation/campus.json?v=2');if(!campusResponse.ok)throw Error('campus');const campus=await campusResponse.json();
-      data.maps.push(campus);data.views.unshift({id:'campus',label:'멧세 전체',map:'campus',bounds:[45,25,620,600]});
+      data.maps.push(campus);data.views.unshift({id:'campus',label:'멧세 전체',map:'campus',bounds:[0,0,campus.width,campus.height]});
       for(const b of data.booths){b.campus=campus.placements[b.id];if(b.campus)b.campusGeometry={...b,...b.campus,map:'campus',sourceMap:b.campus.sourceMap||b.map};}
       for(const f of data.facilities){f.campus=campus.facilityPlacements[f.id];if(f.campus)f.campusGeometry={...f,...f.campus,map:'campus',sourceMap:f.map};}
       const unionBounds=(rects,pad=8)=>{if(!rects.length)return null;return [Math.min(...rects.map(r=>r[0]))-pad,Math.min(...rects.map(r=>r[1]))-pad,Math.max(...rects.map(r=>r[2]))+pad,Math.max(...rects.map(r=>r[3]))+pad];};
       const boothCampusBounds=(predicate,pad=8)=>unionBounds(data.booths.filter(b=>b.campus?.bounds&&predicate(b)).map(b=>b.campus.bounds),pad);
       campusViewBounds=new Map([
-        ['campus',[20,15,660,620]],
+        ['campus',[0,0,campus.width,campus.height]],
         ['all',boothCampusBounds(b=>b.hall>=1&&b.hall<=8,10)],
         ['h78',boothCampusBounds(b=>b.hall>=7&&b.hall<=8,9)],
         ['h46',boothCampusBounds(b=>b.hall>=4&&b.hall<=6,9)],
@@ -774,7 +774,7 @@
         ['selected80',boothCampusBounds(b=>b.map==='selected80',7)],
         ['business9',boothCampusBounds(b=>b.map==='business9',7)]
       ]);
-      const concourseBounds=[45,168,635,275];campusViewBounds.set('concourse',concourseBounds);
+      const campusShift=campus.shift||[0,0],concourseBounds=[45+campusShift[0],168+campusShift[1],635+campusShift[0],275+campusShift[1]];campusViewBounds.set('concourse',concourseBounds);
       const h911Bounds=campusViewBounds.get('halls911');if(h911Bounds)h911Bounds[1]=Math.min(h911Bounds[1],342);
       for(const [key,value] of [...campusViewBounds])if(!value)campusViewBounds.delete(key);
       floorRegions={first:[boothCampusBounds(b=>['main','school'].includes(b.map),16),boothCampusBounds(b=>['halls911','indie9','selected80','business9'].includes(b.map),16)].filter(Boolean),second:[concourseBounds]};
@@ -816,7 +816,7 @@
       try{
       if(window.TGSMapNavigation&&window.TGSNavigation&&window.TGSNavigationSensors){
         const response=await fetch('./navigation/walkable.json');if(!response.ok)throw Error('navigation map');
-        const walkable=await response.json(),campusGrid=await fetch('./navigation/campus-grid.json?v=2');if(!campusGrid.ok)throw Error('campus grid');walkable.maps.campus=await campusGrid.json();
+        const walkable=await response.json(),[campusGrid,outdoorResponse]=await Promise.all([fetch('./navigation/campus-grid.json?v=4'),fetch('./navigation/outdoor-graph.json?v=1')]);if(!campusGrid.ok)throw Error('campus grid');if(!outdoorResponse.ok)throw Error('outdoor graph');walkable.maps.campus=await campusGrid.json();walkable.outdoorGraph=await outdoorResponse.json();
         navigation=window.TGSMapNavigation.create({data,walkable,announce,mapId:()=>activeMap.id,showCampus:()=>selectView('campus'),
           toScreen:p=>mapToScreen(p),
           setMapRotation:(angle,pivot)=>setNavigationMapRotation(angle,pivot),
