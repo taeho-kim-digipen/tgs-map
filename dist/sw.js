@@ -1,13 +1,13 @@
 'use strict';
 // floor-aware-routing-2026-09-18
-const VERSION = '2026.09.20.3';
+const VERSION = '2026.09.20.4';
 const BASE = self.registration.scope;
 const PREFIX = 'tgs2026-travel:' + new URL(BASE).pathname + ':';
 const CACHE = PREFIX + VERSION;
 const FILES = ['./', './app.js', './style.css', './travel.js', './travel.css', './visit.css', './map-data.json', './data.json',
   './main-official.svg', './school-official.svg', './concourse-official.svg',
   './halls911-official.svg', './indie9-official.svg', './selected80-official.svg', './business9-official.svg',
-  './campus.svg','./navigation/campus.json','./navigation/campus-grid.json','./navigation/core.js','./navigation/sensors.js','./navigation/tgs-navigation.js','./navigation/route-worker.js','./navigation/navigation.css','./navigation/walkable.json',
+  './campus.svg','./navigation/campus.json','./navigation/campus-grid.json','./navigation/outdoor-graph.json','./navigation/core.js','./navigation/sensors.js','./navigation/tgs-navigation.js','./navigation/route-worker.js','./navigation/navigation.css','./navigation/walkable.json',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 const URLS = FILES.map(file => new URL(file, BASE).href);
 
